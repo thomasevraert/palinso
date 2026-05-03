@@ -1,28 +1,46 @@
-const API_BASE = 'http://localhost:3000/api';
+// ⚠️ REMPLACE PAR L'URL DE TON SERVEUR RAILWAY APRÈS DÉPLOIEMENT
+const API_BASE = 'https://TON-PROJET.up.railway.app/api';
+// Pour dev local :
+// const API_BASE = 'http://localhost:3000/api';
 
 let allArticles    = [];
 let activeCategory = 'all';
 
-// ── Helpers profil ────────────────────────────────────────────────
+// ── Helper : requête avec token JWT ──────────────────────────────
+async function apiFetch(endpoint, options = {}) {
+  const { token } = await chrome.storage.local.get('token');
+  return fetch(API_BASE + endpoint, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': token ? `Bearer ${token}` : '',
+      ...(options.headers || {}),
+    },
+  });
+}
+
+// ── Helper : infos utilisateur depuis le stockage local ──────────
 function getUserFromStorage() {
   return new Promise(resolve => {
-    chrome.storage.local.get(['session', 'users'], (result) => {
-      const session = result.session;
-      const users   = result.users || [];
-      const user    = users.find(u => u.email === session?.email) || null;
-      resolve({ session, user, users });
+    chrome.storage.local.get(['token', 'email', 'name', 'kindleEmail'], (result) => {
+      resolve({
+        token:       result.token       || null,
+        email:       result.email       || null,
+        name:        result.name        || null,
+        kindleEmail: result.kindleEmail || null,
+      });
     });
   });
 }
 
-// ── Vérification session ──────────────────────────────────────────
-chrome.storage.local.get(['session'], (result) => {
-  const session = result.session;
-  if (!session || !session.loggedIn) {
+// ── Vérification session (JWT) ────────────────────────────────────
+chrome.storage.local.get(['token', 'name', 'email'], (result) => {
+  if (!result.token) {
     window.location.href = chrome.runtime.getURL('auth/auth.html');
     return;
   }
-  document.getElementById('dashboard-user').textContent = session.name;
+  const displayName = result.name || result.email || 'Utilisateur';
+  document.getElementById('dashboard-user').textContent = displayName;
 });
 
 // ── Écoute les messages du popup ──────────────────────────────────
@@ -48,7 +66,6 @@ document.querySelectorAll('.nav-item').forEach(item => {
   item.addEventListener('click', () => switchTab(item.dataset.tab));
 });
 
-// Gestion du hash #profile dans l'URL (depuis le CTA popup)
 if (window.location.hash === '#profile') switchTab('profile');
 
 // ── Init ──────────────────────────────────────────────────────────
@@ -56,7 +73,7 @@ document.addEventListener('DOMContentLoaded', () => {
   loadArticles();
 
   document.getElementById('btn-logout-dashboard').addEventListener('click', () => {
-    chrome.storage.local.remove('session', () => {
+    chrome.storage.local.remove(['token', 'name', 'email', 'kindleEmail'], () => {
       window.location.href = chrome.runtime.getURL('auth/auth.html');
     });
   });
@@ -158,8 +175,16 @@ async function loadArticles() {
   empty.style.display   = 'none';
 
   try {
-    const response = await fetch(`${API_BASE}/articles`);
-    allArticles    = await response.json();
+    const response = await apiFetch('/articles');
+
+    if (response.status === 401 || response.status === 403) {
+      chrome.storage.local.remove(['token', 'name', 'email', 'kindleEmail'], () => {
+        window.location.href = chrome.runtime.getURL('auth/auth.html');
+      });
+      return;
+    }
+
+    allArticles = await response.json();
     loading.style.display = 'none';
     refreshCategoryFilters();
     renderArticles();
@@ -248,8 +273,7 @@ function renderArticles() {
 
 // ── Envoi Kindle depuis dashboard ─────────────────────────────────
 async function handleKindleSend(articleId, btn) {
-  const { user, session } = await getUserFromStorage();
-  const kindleEmail = user?.kindleEmail || session?.kindleEmail || null;
+  const { kindleEmail } = await getUserFromStorage();
 
   if (!kindleEmail) {
     document.getElementById('kindle-missing-modal').classList.add('open');
@@ -260,9 +284,8 @@ async function handleKindleSend(articleId, btn) {
   btn.textContent = '⏳';
 
   try {
-    const response = await fetch(`${API_BASE}/kindle/send`, {
+    const response = await apiFetch('/kindle/send', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ articleId, kindleEmail }),
     });
     const result = await response.json();
@@ -283,11 +306,11 @@ async function handleKindleSend(articleId, btn) {
 
 // ── Profil ────────────────────────────────────────────────────────
 async function loadProfile() {
-  const { session, user } = await getUserFromStorage();
+  const { email, name, kindleEmail } = await getUserFromStorage();
 
-  document.getElementById('profile-name').value  = session?.name  || '';
-  document.getElementById('profile-email-display').textContent = session?.email || '—';
-  document.getElementById('profile-kindle').value = user?.kindleEmail || session?.kindleEmail || '';
+  document.getElementById('profile-name').value                 = name  || '';
+  document.getElementById('profile-email-display').textContent  = email || '—';
+  document.getElementById('profile-kindle').value               = kindleEmail || '';
 }
 
 async function saveProfile() {
@@ -302,18 +325,9 @@ async function saveProfile() {
     return;
   }
 
-  const { session, user, users } = await getUserFromStorage();
-
-  const idx = users.findIndex(u => u.email === session?.email);
-  if (idx !== -1) {
-    users[idx].kindleEmail = kindleEmail || null;
-    users[idx].name        = newName;
-  }
-
-  const updatedSession = { ...session, name: newName, kindleEmail: kindleEmail || null };
-
-  chrome.storage.local.set({ users, session: updatedSession }, () => {
-    // Met à jour le nom affiché dans la sidebar sans rechargement
+  // Sauvegarde dans le stockage local du navigateur
+  chrome.storage.local.set({ name: newName, kindleEmail: kindleEmail || null }, () => {
+    // Met à jour le nom affiché dans la sidebar
     const userEl = document.getElementById('dashboard-user');
     if (userEl) userEl.textContent = newName;
 
@@ -337,41 +351,38 @@ async function changePassword() {
     if (type === 'success') setTimeout(() => { feedback.style.display = 'none'; }, 4000);
   }
 
-  // Validations
-  if (!currentPwd) return showPwdFeedback('⚠️ Saisissez votre mot de passe actuel.', 'error');
-  if (!newPwd)     return showPwdFeedback('⚠️ Saisissez un nouveau mot de passe.', 'error');
-  if (newPwd.length < 6) return showPwdFeedback('⚠️ Le nouveau mot de passe doit faire au moins 6 caractères.', 'error');
-  if (newPwd !== confirmPwd) return showPwdFeedback('⚠️ Les mots de passe ne correspondent pas.', 'error');
-  if (newPwd === currentPwd) return showPwdFeedback('⚠️ Le nouveau mot de passe doit être différent de l\'actuel.', 'error');
+  if (!currentPwd)             return showPwdFeedback('⚠️ Saisissez votre mot de passe actuel.', 'error');
+  if (!newPwd)                 return showPwdFeedback('⚠️ Saisissez un nouveau mot de passe.', 'error');
+  if (newPwd.length < 6)       return showPwdFeedback('⚠️ Le nouveau mot de passe doit faire au moins 6 caractères.', 'error');
+  if (newPwd !== confirmPwd)   return showPwdFeedback('⚠️ Les mots de passe ne correspondent pas.', 'error');
+  if (newPwd === currentPwd)   return showPwdFeedback("⚠️ Le nouveau mot de passe doit être différent de l'actuel.", 'error');
 
-  const { session, users } = await getUserFromStorage();
-  const idx = users.findIndex(u => u.email === session?.email);
+  try {
+    const response = await apiFetch('/auth/change-password', {
+      method: 'POST',
+      body: JSON.stringify({ currentPassword: currentPwd, newPassword: newPwd }),
+    });
+    const result = await response.json();
 
-  if (idx === -1) return showPwdFeedback('❌ Compte introuvable.', 'error');
+    if (!response.ok) {
+      return showPwdFeedback(`❌ ${result.error}`, 'error');
+    }
 
-  // Vérifie le mot de passe actuel
-  if (users[idx].password !== currentPwd) {
-    return showPwdFeedback('❌ Mot de passe actuel incorrect.', 'error');
-  }
-
-  // Met à jour
-  users[idx].password = newPwd;
-
-  chrome.storage.local.set({ users }, () => {
-    // Vide les champs
     document.getElementById('pwd-current').value = '';
     document.getElementById('pwd-new').value     = '';
     document.getElementById('pwd-confirm').value = '';
     showPwdFeedback('✅ Mot de passe modifié avec succès.', 'success');
-  });
+
+  } catch (err) {
+    showPwdFeedback(`❌ Erreur réseau : ${err.message}`, 'error');
+  }
 }
 
 // ── Catégorie ─────────────────────────────────────────────────────
 async function saveCategory(articleId, category, cell) {
   try {
-    const response = await fetch(`${API_BASE}/articles/${articleId}/category`, {
+    const response = await apiFetch(`/articles/${articleId}/category`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ category: category || null }),
     });
     const result = await response.json();
@@ -418,7 +429,10 @@ async function downloadArticle(articleId, format, btn) {
   if (btn) { btn.disabled = true; btn.textContent = '⏳'; }
 
   try {
-    const response = await fetch(`${API_BASE}/articles/${articleId}/download?format=${format}`);
+    const { token } = await chrome.storage.local.get('token');
+    const response  = await fetch(`${API_BASE}/articles/${articleId}/download?format=${format}`, {
+      headers: { 'Authorization': token ? `Bearer ${token}` : '' },
+    });
 
     if (!response.ok) {
       const err = await response.json().catch(() => ({ error: response.statusText }));
@@ -452,7 +466,7 @@ async function deleteArticle(articleId, btn) {
   btn.disabled = true; btn.textContent = '…';
 
   try {
-    const response = await fetch(`${API_BASE}/articles/${articleId}`, { method: 'DELETE' });
+    const response = await apiFetch(`/articles/${articleId}`, { method: 'DELETE' });
     const result   = await response.json();
 
     if (result.success) {
@@ -475,7 +489,7 @@ async function deleteAll() {
   btn.disabled = true; btn.textContent = '⏳ Suppression...';
 
   try {
-    const response = await fetch(`${API_BASE}/articles`, { method: 'DELETE' });
+    const response = await apiFetch('/articles', { method: 'DELETE' });
     const result   = await response.json();
     if (result.success) {
       allArticles = []; activeCategory = 'all';
@@ -500,26 +514,23 @@ function loadSubscription() {
   const trialText      = document.getElementById('trial-text');
   const trialSubtext   = document.getElementById('trial-subtext');
 
-  // ── Date de renouvellement ────────────────────────────────────────
   function renewalDate(since, billing) {
     const d = new Date(since);
     billing === 'annual' ? d.setFullYear(d.getFullYear() + 1) : d.setMonth(d.getMonth() + 1);
     return d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
   }
 
-  // ── Reset boutons ─────────────────────────────────────────────────
   function resetPlanButtons() {
     document.querySelectorAll('.plan-btn').forEach(function(btn) {
       const p = btn.dataset.plan;
       if (p === 'free') {
-        // Le bouton gratuit est toujours désactivé et neutre
         btn.textContent   = 'Offre gratuite';
         btn.disabled      = true;
         btn.style.opacity = '0.45';
       } else {
         btn.disabled      = false;
         btn.style.opacity = '1';
-        btn.textContent   = p === 'essentiel' ? "S'abonner" : "S'abonner";
+        btn.textContent   = "S'abonner";
       }
     });
   }
@@ -527,7 +538,6 @@ function loadSubscription() {
   chrome.storage.local.get(['subscription'], function(result) {
     const sub = result.subscription || null;
 
-    // ── Bandeau essai ─────────────────────────────────────────────
     if (sub && sub.billing === 'trial' && sub.trialEnd) {
       const msLeft   = new Date(sub.trialEnd) - Date.now();
       const daysLeft = Math.ceil(msLeft / (1000 * 60 * 60 * 24));
@@ -542,7 +552,7 @@ function loadSubscription() {
       } else if (daysLeft <= 2) {
         trialInner.className     = 'trial-dashboard-banner trial-urgent';
         trialIcon.textContent    = '⏳';
-        trialText.innerHTML      = '<strong>Plus que ' + daysLeft + ' jour' + (daysLeft > 1 ? 's' : '') + ' d\'essai Premium !</strong>';
+        trialText.innerHTML      = '<strong>Plus que ' + daysLeft + ' jour' + (daysLeft > 1 ? 's' : '') + " d'essai Premium !</strong>";
         trialSubtext.textContent = 'Abonnez-vous maintenant pour ne pas perdre vos accès.';
       } else {
         trialInner.className     = 'trial-dashboard-banner trial';
@@ -553,7 +563,6 @@ function loadSubscription() {
       }
 
       resetPlanButtons();
-      // Pendant l'essai, désactive le bouton Premium (déjà actif)
       document.querySelectorAll('.plan-btn[data-plan="premium"]').forEach(function(b) {
         b.textContent = 'Essai en cours'; b.disabled = true; b.style.opacity = '0.55';
       });
@@ -562,7 +571,6 @@ function loadSubscription() {
 
     trialBanner.style.display = 'none';
 
-    // ── Abonnement payant actif ───────────────────────────────────
     if (sub && sub.plan !== 'free') {
       const planLabel    = sub.plan === 'premium' ? 'Premium' : 'Essentiel';
       const billingLabel = sub.billing === 'annual' ? 'annuel' : 'mensuel';
@@ -578,16 +586,14 @@ function loadSubscription() {
         if (btn.dataset.plan === sub.plan) {
           btn.textContent = 'Plan actuel'; btn.disabled = true; btn.style.opacity = '0.55';
         }
-        // Quand un plan payant est actif, le bouton gratuit = résilier
         if (btn.dataset.plan === 'free') {
-          btn.textContent   = 'Résilier l\'abonnement';
+          btn.textContent   = "Résilier l'abonnement";
           btn.disabled      = false;
           btn.style.opacity = '1';
           btn.className     = 'plan-btn plan-btn-ghost';
         }
       });
     } else {
-      // Aucun abonnement payant — plan gratuit actif
       banner.style.display = 'none';
       resetPlanButtons();
       document.querySelectorAll('.plan-btn[data-plan="free"]').forEach(function(b) {
@@ -598,7 +604,6 @@ function loadSubscription() {
     }
   });
 
-  // ── Toggle mensuel / annuel ───────────────────────────────────────
   function updatePrices(isAnnual) {
     labelMonthly.classList.toggle('active', !isAnnual);
     labelAnnual.classList.toggle('active', isAnnual);
@@ -617,7 +622,6 @@ function loadSubscription() {
   billingSwitch.parentNode.replaceChild(freshSwitch, billingSwitch);
   freshSwitch.addEventListener('change', function() { updatePrices(freshSwitch.checked); });
 
-  // ── CTA "Choisir un plan" dans le bandeau essai ───────────────────
   const trialCta      = document.getElementById('trial-cta');
   const freshTrialCta = trialCta.cloneNode(true);
   trialCta.parentNode.replaceChild(freshTrialCta, trialCta);
@@ -625,7 +629,6 @@ function loadSubscription() {
     document.getElementById('plan-essentiel').scrollIntoView({ behavior: 'smooth', block: 'center' });
   });
 
-  // ── Clic sur un plan ──────────────────────────────────────────────
   document.querySelectorAll('.plan-btn').forEach(function(btn) {
     const freshBtn = btn.cloneNode(true);
     btn.parentNode.replaceChild(freshBtn, btn);
@@ -634,7 +637,6 @@ function loadSubscription() {
       const plan    = freshBtn.dataset.plan;
       const billing = document.getElementById('billing-switch') && document.getElementById('billing-switch').checked ? 'annual' : 'monthly';
 
-      // Clic sur "Résilier l'abonnement" (bouton plan gratuit quand abonnement actif)
       if (plan === 'free') {
         if (!confirm("Résilier votre abonnement ? Vous reviendrez sur l'offre gratuite.")) return;
         chrome.storage.local.remove('subscription', loadSubscription);
@@ -647,7 +649,6 @@ function loadSubscription() {
     });
   });
 
-  // ── Résiliation ───────────────────────────────────────────────────
   const btnCancel   = document.getElementById('btn-cancel-plan');
   const freshCancel = btnCancel.cloneNode(true);
   btnCancel.parentNode.replaceChild(freshCancel, btnCancel);

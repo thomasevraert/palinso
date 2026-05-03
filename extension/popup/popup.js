@@ -1,3 +1,8 @@
+// ⚠️ REMPLACE PAR L'URL DE TON SERVEUR RAILWAY APRÈS DÉPLOIEMENT
+const API_BASE = 'https://TON-PROJET.up.railway.app/api';
+// Pour dev local :
+// const API_BASE = 'http://localhost:3000/api';
+
 // ── Références DOM ────────────────────────────────────────────────
 const btnSend             = document.getElementById('btn-send');
 const btnKindle           = document.getElementById('btn-kindle');
@@ -35,30 +40,28 @@ function showStatus(message, type) {
 
 function getKindleEmailFromProfile() {
   return new Promise(function(resolve) {
-    chrome.storage.local.get(['session', 'users'], function(result) {
-      const session = result.session;
-      const users   = result.users || [];
-      const user    = users.find(function(u) { return u.email === (session && session.email); });
-      resolve((user && user.kindleEmail) || (session && session.kindleEmail) || null);
+    chrome.storage.local.get(['kindleEmail'], function(result) {
+      resolve(result.kindleEmail || null);
     });
   });
 }
 
-// ── Session ───────────────────────────────────────────────────────
-chrome.storage.local.get(['session'], function(result) {
-  const session = result.session;
-  if (!session || !session.loggedIn) {
+// ── Session (JWT) ─────────────────────────────────────────────────
+chrome.storage.local.get(['token', 'name', 'email'], function(result) {
+  if (!result.token) {
+    // Pas de token → redirige vers la page de connexion
     chrome.tabs.create({ url: chrome.runtime.getURL('auth/auth.html') });
     window.close();
     return;
   }
   userBar.style.display  = 'flex';
-  userNameEl.textContent = '👤 ' + session.name;
+  const displayName      = result.name || result.email || 'Utilisateur';
+  userNameEl.textContent = '👤 ' + displayName;
 });
 
 // ── Déconnexion ───────────────────────────────────────────────────
 btnLogout.addEventListener('click', function() {
-  chrome.storage.local.remove('session', function() {
+  chrome.storage.local.remove(['token', 'name', 'email', 'kindleEmail'], function() {
     chrome.tabs.create({ url: chrome.runtime.getURL('auth/auth.html') });
     window.close();
   });
@@ -132,7 +135,10 @@ async function init() {
   customTitleInput.value   = tab.title || '';
 
   try {
-    const response   = await fetch('http://localhost:3000/api/articles/categories/list');
+    const { token } = await chrome.storage.local.get('token');
+    const response = await fetch(`${API_BASE}/articles/categories/list`, {
+      headers: { 'Authorization': token ? `Bearer ${token}` : '' },
+    });
     const categories = await response.json();
     categoriesList.innerHTML = categories.map(function(c) { return '<option value="' + c + '">'; }).join('');
   } catch (e) { /* serveur non disponible */ }
@@ -168,6 +174,14 @@ btnSend.addEventListener('click', async function() {
       payload: await buildPayload(tab, pageData),
     });
 
+    if (result.error === 'SESSION_EXPIRED') {
+      chrome.storage.local.remove(['token', 'name', 'email', 'kindleEmail'], () => {
+        chrome.tabs.create({ url: chrome.runtime.getURL('auth/auth.html') });
+        window.close();
+      });
+      return;
+    }
+
     if (result.error) showStatus('❌ Erreur : ' + result.error, 'error');
     else showStatus('✅ En cours de traitement en ' + selectedFormat.toUpperCase() + ' ! Vérifie le dashboard.', 'success');
 
@@ -199,6 +213,14 @@ btnKindle.addEventListener('click', async function() {
     payload.kindleEmail = kindleEmail;
 
     const result = await chrome.runtime.sendMessage({ type: 'SEND_ARTICLE', payload });
+
+    if (result.error === 'SESSION_EXPIRED') {
+      chrome.storage.local.remove(['token', 'name', 'email', 'kindleEmail'], () => {
+        chrome.tabs.create({ url: chrome.runtime.getURL('auth/auth.html') });
+        window.close();
+      });
+      return;
+    }
 
     if (result.error) showStatus('❌ Erreur : ' + result.error, 'error');
     else showStatus("✅ En cours d'envoi vers votre Kindle ! Vérifiez dans quelques minutes.", 'success');

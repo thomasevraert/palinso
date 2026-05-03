@@ -1,3 +1,8 @@
+// ⚠️ REMPLACE PAR L'URL DE TON SERVEUR RAILWAY APRÈS DÉPLOIEMENT
+const API_BASE = 'https://TON-PROJET.up.railway.app/api';
+// Pour dev local :
+// const API_BASE = 'http://localhost:3000/api';
+
 // ── Onglets ──────────────────────────────────────────────────────
 document.getElementById('tab-signup').addEventListener('click', () => {
   document.getElementById('tab-signup').classList.add('active');
@@ -16,7 +21,7 @@ document.getElementById('tab-login').addEventListener('click', () => {
 // ── Helpers ──────────────────────────────────────────────────────
 function showError(id, msg) {
   const el = document.getElementById(id);
-  el.textContent  = msg;
+  el.textContent   = msg;
   el.style.display = 'block';
 }
 
@@ -26,7 +31,7 @@ function hideError(id) {
 
 function showSuccess(id, msg) {
   const el = document.getElementById(id);
-  el.textContent  = msg;
+  el.textContent   = msg;
   el.style.display = 'block';
 }
 
@@ -36,7 +41,7 @@ function openDashboard() {
 }
 
 // ── Inscription ──────────────────────────────────────────────────
-document.getElementById('btn-signup').addEventListener('click', () => {
+document.getElementById('btn-signup').addEventListener('click', async () => {
   hideError('signup-error');
   document.getElementById('signup-success').style.display = 'none';
 
@@ -49,43 +54,54 @@ document.getElementById('btn-signup').addEventListener('click', () => {
   if (!email)              return showError('signup-error', "L'email est obligatoire.");
   if (password.length < 6) return showError('signup-error', 'Le mot de passe doit faire au moins 6 caractères.');
 
-  chrome.storage.local.get(['users'], (result) => {
-    const users  = result.users || [];
-    const exists = users.find(u => u.email === email);
-    if (exists) return showError('signup-error', 'Un compte existe déjà avec cet email.');
+  const btn = document.getElementById('btn-signup');
+  btn.disabled    = true;
+  btn.textContent = 'Création...';
 
-    const newUser = {
-      name,
-      email,
-      password,
-      kindleEmail: kindleEmail || null,
-      createdAt: new Date().toISOString(),
-    };
-    users.push(newUser);
+  try {
+    const res  = await fetch(`${API_BASE}/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, email, password, kindleEmail: kindleEmail || null }),
+    });
+    const data = await res.json();
 
-    // Essai Premium 7 jours automatique
+    if (!res.ok) {
+      showError('signup-error', data.error || 'Erreur lors de la création.');
+      return;
+    }
+
+    // Essai Premium 7 jours automatique (stocké localement pour l'UI)
     const trialEnd = new Date();
     trialEnd.setDate(trialEnd.getDate() + 7);
     const trial = {
-      plan:      'premium',
-      billing:   'trial',
-      since:     new Date().toISOString(),
-      trialEnd:  trialEnd.toISOString(),
+      plan:     'premium',
+      billing:  'trial',
+      since:    new Date().toISOString(),
+      trialEnd: trialEnd.toISOString(),
     };
 
     chrome.storage.local.set({
-      users,
-      session:      { name, email, kindleEmail: kindleEmail || null, loggedIn: true },
+      token:        data.token,
+      email:        data.email,
+      name:         data.name,
+      kindleEmail:  kindleEmail || null,
       subscription: trial,
     }, () => {
       showSuccess('signup-success', `Compte créé ! Bienvenue ${name} 🎉 — 7 jours Premium offerts`);
       setTimeout(openDashboard, 1500);
     });
-  });
+
+  } catch {
+    showError('signup-error', 'Impossible de joindre le serveur. Vérifie ta connexion.');
+  } finally {
+    btn.disabled    = false;
+    btn.textContent = 'Créer mon compte →';
+  }
 });
 
 // ── Connexion ────────────────────────────────────────────────────
-document.getElementById('btn-login').addEventListener('click', () => {
+document.getElementById('btn-login').addEventListener('click', async () => {
   hideError('login-error');
 
   const email    = document.getElementById('login-email').value.trim();
@@ -94,19 +110,34 @@ document.getElementById('btn-login').addEventListener('click', () => {
   if (!email)    return showError('login-error', "L'email est obligatoire.");
   if (!password) return showError('login-error', 'Le mot de passe est obligatoire.');
 
-  chrome.storage.local.get(['users'], (result) => {
-    const users = result.users || [];
-    const user  = users.find(u => u.email === email && u.password === password);
+  const btn = document.getElementById('btn-login');
+  btn.disabled    = true;
+  btn.textContent = 'Connexion...';
 
-    if (!user) return showError('login-error', 'Email ou mot de passe incorrect.');
+  try {
+    const res  = await fetch(`${API_BASE}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+    const data = await res.json();
+
+    if (!res.ok) {
+      showError('login-error', data.error || 'Email ou mot de passe incorrect.');
+      return;
+    }
 
     chrome.storage.local.set({
-      session: {
-        name:         user.name,
-        email:        user.email,
-        kindleEmail:  user.kindleEmail || null,
-        loggedIn:     true,
-      },
+      token:       data.token,
+      email:       data.email,
+      name:        data.name || data.email,
+      kindleEmail: data.kindleEmail || null,
     }, openDashboard);
-  });
+
+  } catch {
+    showError('login-error', 'Impossible de joindre le serveur. Vérifie ta connexion.');
+  } finally {
+    btn.disabled    = false;
+    btn.textContent = 'Se connecter →';
+  }
 });

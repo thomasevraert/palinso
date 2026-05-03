@@ -1,12 +1,16 @@
 {
   "manifest_version": 3,
   "name": "KTool Clone",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Envoie des articles web à ton Kindle en un clic",
 
   "permissions": ["activeTab", "storage", "scripting", "tabs"],
 
-  "host_permissions": ["http://localhost:3000/*"],
+  "host_permissions": [
+    "https://TON-PROJET.up.railway.app/*",
+    "http://localhost:3000/*",
+    "<all_urls>"
+  ],
 
   "action": {
     "default_popup": "popup/popup.html",
@@ -26,7 +30,7 @@
 
   "web_accessible_resources": [
     {
-      "resources": ["auth/auth.html"],
+      "resources": ["auth/auth.html", "dashboard/dashboard.html"],
       "matches": ["<all_urls>"]
     }
   ]

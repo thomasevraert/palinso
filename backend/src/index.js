@@ -1,22 +1,18 @@
 require('dotenv').config();
 const express = require('express');
-const cors = require('cors');
+const cors    = require('cors');
 
 const app = express();
 
-// Autorise les requêtes venant de l'extension Chrome et du navigateur en local
-app.use(cors({
-  origin: '*', // En production, restreindre cette valeur
-}));
-
-// Permet de lire le JSON envoyé dans les requêtes (5mb max pour les grandes pages)
+app.use(cors({ origin: '*' }));
 app.use(express.json({ limit: '5mb' }));
 
-// Connecte les routes
+// ── Routes ────────────────────────────────────────────────────────
+app.use('/api/auth',     require('./routes/auth'));
 app.use('/api/articles', require('./routes/articles'));
-app.use('/api/kindle', require('./routes/kindle'));
+app.use('/api/kindle',   require('./routes/kindle'));
 
-// Route de vérification : permet de savoir si le serveur tourne
+// Route de vérification
 app.get('/health', (req, res) => {
   res.json({ ok: true, message: 'Serveur KTool Clone opérationnel' });
 });
