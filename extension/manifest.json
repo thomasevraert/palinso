@@ -1,0 +1,33 @@
+{
+  "manifest_version": 3,
+  "name": "KTool Clone",
+  "version": "0.1.0",
+  "description": "Envoie des articles web à ton Kindle en un clic",
+
+  "permissions": ["activeTab", "storage", "scripting", "tabs"],
+
+  "host_permissions": ["http://localhost:3000/*"],
+
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_title": "Envoyer au Kindle"
+  },
+
+  "background": {
+    "service_worker": "background.js"
+  },
+
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["Readability.js", "content.js"]
+    }
+  ],
+
+  "web_accessible_resources": [
+    {
+      "resources": ["auth/auth.html"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}

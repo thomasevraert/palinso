@@ -1,0 +1,1081 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>KTool Clone — Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --navy:  #034C8C;
+      --teal:  #5A7E8C;
+      --mist:  #819FA6;
+      --cream: #F2F1DF;
+      --gold:  #A68A56;
+      --white: #ffffff;
+      --ink:   #0d1f2d;
+      --border: #dddbc9;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--cream);
+      color: var(--ink);
+      margin: 0;
+      min-height: 100vh;
+    }
+
+    /* ── Sidebar ── */
+    .layout { display: flex; min-height: 100vh; }
+
+    .sidebar {
+      width: 220px;
+      background: var(--navy);
+      display: flex;
+      flex-direction: column;
+      padding: 28px 0;
+      flex-shrink: 0;
+      position: fixed;
+      top: 0; left: 0; bottom: 0;
+    }
+
+    .sidebar-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 20px 28px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      margin-bottom: 20px;
+    }
+
+    .logo-icon {
+      width: 34px; height: 34px;
+      background: rgba(255,255,255,0.12);
+      border-radius: 9px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 17px;
+    }
+
+    .logo-text {
+      font-family: 'Playfair Display', serif;
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--white);
+    }
+
+    .nav-section {
+      padding: 0 12px;
+      flex: 1;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 9px;
+      font-size: 13px;
+      font-weight: 500;
+      color: rgba(255,255,255,0.6);
+      cursor: pointer;
+      transition: all 0.15s;
+      margin-bottom: 2px;
+    }
+
+    .nav-item:hover { color: rgba(255,255,255,0.9); background: rgba(255,255,255,0.06); }
+
+    .nav-item.active {
+      background: rgba(255,255,255,0.12);
+      color: var(--white);
+    }
+
+    .nav-item .nav-icon { font-size: 16px; }
+
+    .sidebar-user {
+      padding: 16px 20px;
+      border-top: 1px solid rgba(255,255,255,0.08);
+      margin-top: auto;
+    }
+
+    .user-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: rgba(255,255,255,0.9);
+      margin-bottom: 2px;
+    }
+
+    .user-email {
+      font-size: 11px;
+      color: rgba(255,255,255,0.4);
+      margin-bottom: 10px;
+    }
+
+    #btn-logout-dashboard {
+      width: 100%;
+      padding: 7px 12px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.15);
+      color: rgba(255,255,255,0.7);
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      font-family: 'DM Sans', sans-serif;
+      cursor: pointer;
+      transition: all 0.15s;
+      text-align: left;
+    }
+
+    #btn-logout-dashboard:hover { background: rgba(255,255,255,0.15); color: white; }
+
+    /* ── Contenu principal ── */
+    .content {
+      margin-left: 220px;
+      flex: 1;
+      padding: 36px 40px;
+    }
+
+    .page-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 26px;
+      font-weight: 700;
+      color: var(--ink);
+      margin-bottom: 28px;
+    }
+
+    /* ── Vues ── */
+    #view-articles, #view-profile, #view-subscription { display: none; }
+    #view-articles.active, #view-profile.active, #view-subscription.active { display: block; }
+
+    /* ── Toolbar ── */
+    .toolbar {
+      display: flex; align-items: center;
+      gap: 10px; margin-bottom: 20px; flex-wrap: wrap;
+    }
+
+    .filter-label { font-size: 12px; font-weight: 600; color: var(--mist); }
+
+    #category-filters { display: flex; gap: 6px; flex-wrap: wrap; }
+
+    .filter-btn {
+      padding: 5px 14px;
+      border-radius: 20px;
+      border: 1.5px solid var(--border);
+      background: var(--white);
+      font-size: 12px;
+      font-weight: 500;
+      font-family: 'DM Sans', sans-serif;
+      cursor: pointer;
+      color: var(--teal);
+      transition: all 0.15s;
+    }
+
+    .filter-btn:hover { border-color: var(--teal); }
+    .filter-btn.active { background: var(--navy); color: var(--white); border-color: var(--navy); }
+
+    .refresh-btn {
+      margin-left: auto;
+      padding: 8px 16px;
+      background: var(--white);
+      color: var(--teal);
+      border: 1.5px solid var(--border);
+      border-radius: 9px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+      font-family: 'DM Sans', sans-serif;
+      transition: all 0.15s;
+    }
+
+    .refresh-btn:hover { border-color: var(--teal); }
+
+    #btn-delete-all {
+      display: none;
+      padding: 8px 16px;
+      background: #fdf2f1;
+      color: #8b2020;
+      border: 1.5px solid #f0c5c1;
+      border-radius: 9px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+      font-family: 'DM Sans', sans-serif;
+      transition: all 0.15s;
+    }
+
+    #btn-delete-all:hover { background: #fbe5e3; }
+
+    .count-info { font-size: 12px; color: var(--mist); margin-bottom: 14px; }
+
+    /* ── Table ── */
+    .card {
+      background: var(--white);
+      border-radius: 14px;
+      box-shadow: 0 1px 3px rgba(3,31,45,0.06), 0 4px 16px rgba(3,31,45,0.04);
+      overflow: hidden;
+      border: 1px solid rgba(3,76,140,0.06);
+    }
+
+    table { width: 100%; border-collapse: collapse; }
+
+    th {
+      background: #f7f6ed;
+      padding: 11px 16px;
+      text-align: left;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--teal);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      border-bottom: 1px solid var(--border);
+    }
+
+    td {
+      padding: 12px 16px;
+      border-bottom: 1px solid #f0eedf;
+      font-size: 13px;
+      vertical-align: middle;
+    }
+
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #fafaf3; }
+
+    .title-cell a {
+      color: var(--ink);
+      font-weight: 500;
+      text-decoration: none;
+      display: block;
+      max-width: 280px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .title-cell a:hover { color: var(--navy); text-decoration: underline; }
+    .error-tooltip { font-size: 11px; color: #8b2020; margin-top: 2px; }
+
+    /* ── Catégorie éditable ── */
+    .category-cell { min-width: 120px; }
+
+    .category-display {
+      display: flex; align-items: center; gap: 5px; cursor: pointer;
+    }
+
+    .category-tag {
+      display: inline-block;
+      padding: 2px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 500;
+      background: rgba(90,126,140,0.1);
+      color: var(--teal);
+    }
+
+    .category-tag.empty { color: var(--mist); background: none; font-style: italic; }
+
+    .category-edit-icon { font-size: 10px; color: var(--mist); opacity: 0; transition: opacity 0.15s; }
+    tr:hover .category-edit-icon { opacity: 1; }
+
+    .category-edit-form { display: none; gap: 4px; align-items: center; }
+    .category-edit-form.visible { display: flex; }
+
+    .category-input {
+      padding: 4px 8px;
+      border: 1.5px solid var(--navy);
+      border-radius: 6px;
+      font-size: 12px;
+      width: 110px;
+      outline: none;
+      font-family: 'DM Sans', sans-serif;
+    }
+
+    .category-save-btn {
+      padding: 4px 8px;
+      background: var(--navy);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .category-cancel-btn {
+      padding: 4px 6px;
+      background: var(--cream);
+      color: var(--teal);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    /* ── Badges format ── */
+    .badge-format {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+    }
+
+    .badge-format-epub3 { background: rgba(3,76,140,0.1); color: var(--navy); }
+    .badge-format-kepub { background: rgba(90,126,140,0.12); color: var(--teal); }
+
+    /* ── Badges statut ── */
+    .badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .badge-done       { background: #edf7ed; color: #1d6b1d; }
+    .badge-processing { background: rgba(3,76,140,0.08); color: var(--navy); }
+    .badge-error      { background: #fdf2f1; color: #8b2020; }
+    .badge-pending    { background: #f7f6ed; color: var(--mist); }
+
+    /* ── Actions ── */
+    .actions { display: flex; gap: 5px; align-items: center; flex-wrap: wrap; }
+
+    .btn-action {
+      padding: 4px 10px;
+      border-radius: 6px;
+      border: 1.5px solid var(--border);
+      background: var(--white);
+      font-size: 11px;
+      font-weight: 500;
+      font-family: 'DM Sans', sans-serif;
+      cursor: pointer;
+      color: var(--teal);
+      white-space: nowrap;
+      transition: all 0.15s;
+    }
+
+    .btn-action:hover { border-color: var(--teal); }
+
+    .btn-delete { color: #8b2020; border-color: #f0c5c1; }
+    .btn-delete:hover { background: #fdf2f1; }
+
+    .btn-kindle-action { color: var(--gold); border-color: #d4b87c; }
+    .btn-kindle-action:hover { background: rgba(166,138,86,0.06); }
+
+    .download-group { display: flex; align-items: center; gap: 4px; }
+
+    .format-select {
+      padding: 4px 6px;
+      border: 1.5px solid var(--border);
+      border-radius: 6px;
+      font-size: 11px;
+      color: var(--teal);
+      background: var(--white);
+      font-family: 'DM Sans', sans-serif;
+      cursor: pointer;
+    }
+
+    #loading, #empty {
+      text-align: center;
+      padding: 56px;
+      color: var(--mist);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    /* ── Profil ── */
+    .profile-card {
+      background: var(--white);
+      border-radius: 14px;
+      box-shadow: 0 1px 3px rgba(3,31,45,0.06), 0 4px 16px rgba(3,31,45,0.04);
+      padding: 36px;
+      max-width: 480px;
+      border: 1px solid rgba(3,76,140,0.06);
+    }
+
+    .profile-card h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--ink);
+      margin-bottom: 28px;
+    }
+
+    .profile-field { margin-bottom: 22px; }
+
+    .profile-field label {
+      display: block;
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--teal);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 6px;
+    }
+
+    .profile-field .field-value {
+      font-size: 14px;
+      color: var(--ink);
+      padding: 9px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .profile-field input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1.5px solid var(--border);
+      border-radius: 9px;
+      font-size: 14px;
+      font-family: 'DM Sans', sans-serif;
+      color: var(--ink);
+      background: #fafaf5;
+      outline: none;
+      transition: all 0.15s;
+    }
+
+    .profile-field input:focus {
+      border-color: var(--navy);
+      background: var(--white);
+      box-shadow: 0 0 0 3px rgba(3,76,140,0.08);
+    }
+
+    .profile-field input::placeholder { color: #aaa899; }
+    .profile-field .field-hint { font-size: 11px; color: var(--mist); margin-top: 5px; }
+
+    .profile-save-btn {
+      padding: 11px 28px;
+      background: var(--navy);
+      color: var(--white);
+      border: none;
+      border-radius: 9px;
+      font-size: 14px;
+      font-weight: 600;
+      font-family: 'DM Sans', sans-serif;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .profile-save-btn:hover { background: #023d72; }
+
+    .profile-feedback {
+      margin-top: 14px;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      display: none;
+    }
+
+    .profile-feedback.success { background: #edf7ed; color: #1d6b1d; border: 1px solid #b8d8b8; }
+    .profile-feedback.error   { background: #fdf2f1; color: #8b2020; border: 1px solid #f0c5c1; }
+
+    /* ── Modal Kindle ── */
+    #kindle-missing-modal {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(3,31,45,0.5);
+      z-index: 100;
+      align-items: center; justify-content: center;
+      padding: 20px;
+      backdrop-filter: blur(3px);
+    }
+
+    #kindle-missing-modal.open { display: flex; }
+
+    .modal-box {
+      background: var(--white);
+      border-radius: 16px;
+      padding: 32px 28px 24px;
+      max-width: 400px; width: 100%;
+      box-shadow: 0 20px 60px rgba(3,31,45,0.18);
+      border-top: 4px solid var(--gold);
+    }
+
+    .modal-box h3 {
+      font-family: 'Playfair Display', serif;
+      font-size: 19px;
+      font-weight: 700;
+      color: var(--ink);
+      margin-bottom: 10px;
+    }
+
+    .modal-box p {
+      font-size: 14px;
+      color: var(--teal);
+      line-height: 1.6;
+      margin-bottom: 22px;
+    }
+
+    .modal-actions { display: flex; gap: 10px; }
+
+    .modal-btn {
+      flex: 1; padding: 11px;
+      border: none; border-radius: 9px;
+      font-size: 13px; font-weight: 600;
+      font-family: 'DM Sans', sans-serif;
+      cursor: pointer; transition: all 0.15s;
+    }
+
+    .modal-btn-primary { background: var(--navy); color: var(--white); }
+    .modal-btn-primary:hover { background: #023d72; }
+    .modal-btn-cancel { background: var(--cream); color: var(--teal); border: 1px solid var(--border); }
+    .modal-btn-cancel:hover { background: #e8e6d4; }
+    /* ── Abonnement ── */
+    #view-subscription { max-width: 900px; }
+
+    .current-plan-banner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: linear-gradient(135deg, var(--navy), var(--teal));
+      color: white;
+      border-radius: 12px;
+      padding: 14px 20px;
+      margin-bottom: 28px;
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .current-plan-banner button {
+      background: rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.3);
+      color: white;
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      transition: background 0.15s;
+    }
+
+    .current-plan-banner button:hover { background: rgba(255,255,255,0.25); }
+
+    /* Bandeau essai dans le dashboard */
+    .trial-dashboard-banner {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-radius: 12px;
+      padding: 14px 20px;
+      margin-bottom: 28px;
+      font-size: 14px;
+    }
+
+    .trial-dashboard-banner.trial {
+      background: linear-gradient(135deg, rgba(3,76,140,0.07), rgba(90,126,140,0.09));
+      border: 1px solid rgba(3,76,140,0.18);
+      color: var(--navy);
+    }
+
+    .trial-dashboard-banner.trial-urgent {
+      background: rgba(192,57,43,0.07);
+      border: 1px solid rgba(192,57,43,0.2);
+      color: #8b2020;
+    }
+
+    .trial-banner-icon { font-size: 22px; }
+    .trial-banner-body { flex: 1; }
+    .trial-banner-body strong { font-weight: 700; }
+    .trial-banner-body p { font-size: 12px; opacity: 0.75; margin-top: 2px; }
+    .trial-banner-cta {
+      padding: 7px 16px;
+      background: var(--navy);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      font-family: 'DM Sans', sans-serif;
+      cursor: pointer;
+    }
+    .trial-banner-cta:hover { background: #023d72; }
+
+    .billing-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 6px;
+    }
+
+    .billing-label {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--teal);
+      transition: color 0.15s;
+    }
+
+    .billing-label.active { color: var(--navy); font-weight: 700; }
+
+    .toggle-switch { position: relative; display: inline-block; cursor: pointer; }
+
+    .toggle-switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+
+    .toggle-track {
+      display: flex;
+      align-items: center;
+      width: 44px;
+      height: 24px;
+      background: var(--mist);
+      border-radius: 12px;
+      padding: 2px;
+      transition: background 0.2s;
+    }
+
+    .toggle-switch input:checked + .toggle-track { background: var(--navy); }
+
+    .toggle-thumb {
+      width: 20px;
+      height: 20px;
+      background: white;
+      border-radius: 50%;
+      transition: transform 0.2s;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+
+    .toggle-switch input:checked + .toggle-track .toggle-thumb { transform: translateX(20px); }
+
+    .saving-badge {
+      background: var(--gold);
+      color: white;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 9px;
+      border-radius: 20px;
+      letter-spacing: 0.02em;
+    }
+
+    .billing-hint { font-size: 12px; color: var(--mist); margin-bottom: 28px; text-align: center; }
+
+    .plans-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 18px;
+      align-items: start;
+    }
+
+    .plan-card {
+      background: white;
+      border-radius: 16px;
+      padding: 26px 20px;
+      border: 2px solid var(--border);
+      position: relative;
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+
+    .plan-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(3,76,140,0.10);
+    }
+
+    .plan-card-featured {
+      border-color: var(--navy);
+      background: linear-gradient(160deg, #f8faff 0%, white 100%);
+      box-shadow: 0 4px 20px rgba(3,76,140,0.12);
+    }
+
+    .plan-popular-badge {
+      position: absolute;
+      top: -14px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--navy);
+      color: white;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 5px 14px;
+      border-radius: 20px;
+      white-space: nowrap;
+      font-family: 'DM Sans', sans-serif;
+    }
+
+    .plan-header { text-align: center; margin-bottom: 20px; padding-top: 8px; }
+
+    .plan-name {
+      font-family: 'Playfair Display', serif;
+      font-size: 19px;
+      font-weight: 700;
+      color: var(--ink);
+      margin-bottom: 12px;
+    }
+
+    .plan-price-wrap {
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      gap: 2px;
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+
+    .plan-currency { font-size: 16px; font-weight: 600; color: var(--ink); padding-bottom: 6px; }
+    .plan-price    { font-size: 46px; font-weight: 800; color: var(--ink); letter-spacing: -2px; }
+    .plan-per      { font-size: 13px; color: var(--mist); padding-bottom: 7px; }
+    .plan-price-free { font-size: 28px; font-weight: 800; color: var(--ink); padding: 12px 0 6px; }
+
+    .plan-billing-note {
+      font-size: 11px;
+      color: var(--mist);
+      min-height: 16px;
+    }
+
+    .plan-btn {
+      width: 100%;
+      padding: 11px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 700;
+      font-family: 'DM Sans', sans-serif;
+      cursor: pointer;
+      transition: all 0.15s;
+      margin-bottom: 6px;
+    }
+
+    .plan-btn-outline {
+      background: transparent;
+      border: 2px solid var(--navy);
+      color: var(--navy);
+    }
+
+    .plan-btn-outline:hover:not(:disabled) { background: var(--navy); color: white; }
+
+    .plan-btn-filled {
+      background: var(--navy);
+      border: 2px solid var(--navy);
+      color: white;
+    }
+
+    .plan-btn-filled:hover:not(:disabled) { background: #023d72; border-color: #023d72; }
+
+    .plan-btn-ghost {
+      background: transparent;
+      border: 2px solid var(--border);
+      color: var(--mist);
+    }
+
+    .plan-btn-ghost:hover:not(:disabled) { border-color: var(--teal); color: var(--teal); }
+
+    .plan-btn:disabled { opacity: 0.55; cursor: default; }
+
+    .plan-no-cc { text-align: center; font-size: 11px; color: var(--mist); margin-bottom: 16px; }
+
+    .plan-divider { border: none; border-top: 1px solid var(--border); margin-bottom: 14px; }
+
+    .plan-features-title {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--ink);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .plan-features { list-style: none; padding: 0; }
+
+    .plan-features li {
+      font-size: 12px;
+      color: var(--teal);
+      padding: 5px 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-bottom: 1px dashed rgba(90,126,140,0.15);
+    }
+
+    .plan-features li:last-child { border-bottom: none; }
+    .plan-features li.disabled { color: var(--mist); text-decoration: line-through; opacity: 0.5; }
+
+    /* ── Champ mot de passe avec bouton toggle ── */
+    .password-input-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .password-input-wrap input {
+      width: 100%;
+      padding-right: 40px;
+    }
+
+    .pwd-toggle {
+      position: absolute;
+      right: 10px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 14px;
+      color: var(--mist);
+      padding: 0;
+      line-height: 1;
+      opacity: 0.6;
+      transition: opacity 0.15s;
+    }
+
+    .pwd-toggle:hover { opacity: 1; }
+  </style>
+</head>
+<body>
+  <div class="layout">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <div class="logo-icon">📚</div>
+        <span class="logo-text">KTool Clone</span>
+      </div>
+
+      <nav class="nav-section">
+        <div class="nav-item active" data-tab="articles">
+          <span class="nav-icon">📋</span> Mes articles
+        </div>
+        <div class="nav-item" data-tab="profile">
+          <span class="nav-icon">👤</span> Profil
+        </div>
+        <div class="nav-item" data-tab="subscription">
+          <span class="nav-icon">⭐</span> Abonnement
+        </div>
+      </nav>
+
+      <div class="sidebar-user">
+        <div class="user-name" id="dashboard-user"></div>
+        <button id="btn-logout-dashboard">↩ Déconnexion</button>
+      </div>
+    </aside>
+
+    <!-- Contenu -->
+    <main class="content">
+
+      <!-- Vue : Articles -->
+      <div id="view-articles" class="active">
+        <h1 class="page-title">Mes articles</h1>
+
+        <div class="toolbar">
+          <span class="filter-label">Filtrer :</span>
+          <div id="category-filters">
+            <button class="filter-btn active" data-category="all">Tous</button>
+          </div>
+          <button class="refresh-btn" id="refresh-btn">↻ Rafraîchir</button>
+          <button id="btn-delete-all">🗑 Tout supprimer</button>
+        </div>
+
+        <div class="count-info" id="count-info"></div>
+
+        <div class="card">
+          <div id="loading">Chargement de vos articles...</div>
+          <div id="empty" style="display:none">
+            Aucun article pour le moment.<br>
+            <span style="color:var(--mist);font-size:12px">Utilisez l'extension sur une page web pour commencer.</span>
+          </div>
+          <table id="articles-table" style="display:none">
+            <thead>
+              <tr>
+                <th>Article</th>
+                <th>Catégorie</th>
+                <th>Format</th>
+                <th>Statut</th>
+                <th>Kindle</th>
+                <th>Date</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="articles-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Vue : Profil -->
+      <div id="view-profile">
+        <h1 class="page-title">Mon profil</h1>
+        <div class="profile-card">
+          <h2>Informations personnelles</h2>
+
+          <div class="profile-field">
+            <label>Nom</label>
+            <input type="text" id="profile-name" placeholder="Votre nom" />
+          </div>
+
+          <div class="profile-field">
+            <label>Email</label>
+            <div class="field-value" id="profile-email-display"></div>
+            <p class="field-hint">L'adresse email ne peut pas être modifiée.</p>
+          </div>
+
+          <div class="profile-field">
+            <label>Adresse email Kindle</label>
+            <input type="email" id="profile-kindle" placeholder="prenom_xxx@kindle.com" />
+            <p class="field-hint">Utilisée pour envoyer directement vos articles sur votre liseuse.</p>
+          </div>
+
+          <button class="profile-save-btn" id="btn-save-profile">Sauvegarder</button>
+          <div class="profile-feedback" id="profile-feedback"></div>
+        </div>
+
+        <!-- Changement de mot de passe -->
+        <div class="profile-card" style="margin-top: 24px;">
+          <h2>Changer le mot de passe</h2>
+
+          <div class="profile-field">
+            <label>Mot de passe actuel</label>
+            <div class="password-input-wrap">
+              <input type="password" id="pwd-current" placeholder="••••••••" autocomplete="current-password" />
+              <button class="pwd-toggle" data-target="pwd-current" type="button">👁</button>
+            </div>
+          </div>
+
+          <div class="profile-field">
+            <label>Nouveau mot de passe</label>
+            <div class="password-input-wrap">
+              <input type="password" id="pwd-new" placeholder="••••••••" autocomplete="new-password" />
+              <button class="pwd-toggle" data-target="pwd-new" type="button">👁</button>
+            </div>
+            <p class="field-hint">6 caractères minimum.</p>
+          </div>
+
+          <div class="profile-field">
+            <label>Confirmer le nouveau mot de passe</label>
+            <div class="password-input-wrap">
+              <input type="password" id="pwd-confirm" placeholder="••••••••" autocomplete="new-password" />
+              <button class="pwd-toggle" data-target="pwd-confirm" type="button">👁</button>
+            </div>
+          </div>
+
+          <button class="profile-save-btn" id="btn-change-password">Modifier le mot de passe</button>
+          <div class="profile-feedback" id="pwd-feedback"></div>
+        </div>
+      </div>
+
+      <!-- Vue : Abonnement -->
+      <div id="view-subscription">
+        <h1 class="page-title">Abonnement</h1>
+
+        <!-- Bandeau plan actif payant -->
+        <div id="current-plan-banner" style="display:none" class="current-plan-banner">
+          <span id="current-plan-text"></span>
+          <button id="btn-cancel-plan">Résilier l'abonnement</button>
+        </div>
+
+        <!-- Bandeau essai -->
+        <div id="trial-banner" style="display:none">
+          <div class="trial-dashboard-banner trial" id="trial-banner-inner">
+            <span class="trial-banner-icon" id="trial-icon"></span>
+            <div class="trial-banner-body">
+              <span id="trial-text"></span>
+              <p id="trial-subtext"></p>
+            </div>
+            <button class="trial-banner-cta" id="trial-cta" style="display:none"></button>
+          </div>
+        </div>
+
+        <!-- Toggle mensuel / annuel -->
+        <div class="billing-toggle">
+          <span class="billing-label active" id="label-monthly">Mensuel</span>
+          <label class="toggle-switch">
+            <input type="checkbox" id="billing-switch">
+            <span class="toggle-track"><span class="toggle-thumb"></span></span>
+          </label>
+          <span class="billing-label" id="label-annual">Annuel</span>
+          <span class="saving-badge">−20%</span>
+        </div>
+        <p class="billing-hint">Prix en EUR, TVA incluse.</p>
+
+        <!-- Cartes tarifaires -->
+        <div class="plans-grid">
+
+          <!-- Plan Gratuit -->
+          <div class="plan-card" id="plan-gratuit">
+            <div class="plan-header">
+              <div class="plan-name">Gratuit</div>
+              <div class="plan-price-free">0 €</div>
+              <div class="plan-billing-note">pour toujours</div>
+            </div>
+
+            <button class="plan-btn plan-btn-ghost" data-plan="free" disabled style="opacity:0.45;">Offre gratuite</button>
+            <p class="plan-no-cc">&nbsp;</p>
+
+            <hr class="plan-divider">
+            <p class="plan-features-title">Fonctionnalités</p>
+            <ul class="plan-features">
+              <li>✓ Extension navigateur</li>
+              <li>✓ 10 conversions / mois</li>
+              <li>✓ Export EPUB3</li>
+              <li class="disabled">✗ Envoi vers Kindle</li>
+              <li class="disabled">✗ Export KEPUB</li>
+              <li class="disabled">✗ Catégorisation</li>
+            </ul>
+          </div>
+
+          <!-- Plan Essentiel -->
+          <div class="plan-card" id="plan-essentiel">
+            <div class="plan-header">
+              <div class="plan-name">Essentiel</div>
+              <div class="plan-price-wrap">
+                <span class="plan-currency">€</span>
+                <span class="plan-price" data-monthly="3.99" data-annual="3.19">3,99</span>
+                <span class="plan-per">/mois</span>
+              </div>
+              <div class="plan-billing-note" data-monthly="facturé mensuellement" data-annual="facturé 38,28 € / an">facturé mensuellement</div>
+            </div>
+
+            <button class="plan-btn plan-btn-outline" data-plan="essentiel">S'abonner</button>
+            <p class="plan-no-cc">Sans carte bancaire requise</p>
+
+            <hr class="plan-divider">
+            <p class="plan-features-title">Tout Gratuit, plus :</p>
+            <ul class="plan-features">
+              <li>✓ Conversions illimitées</li>
+              <li>✓ Export EPUB3 &amp; KEPUB</li>
+              <li>✓ Envoi vers Kindle</li>
+              <li>✓ Catégorisation des articles</li>
+              <li class="disabled">✗ Résumés IA</li>
+              <li class="disabled">✗ Stockage étendu</li>
+            </ul>
+          </div>
+
+          <!-- Plan Premium -->
+          <div class="plan-card plan-card-featured" id="plan-premium">
+            <div class="plan-popular-badge">Le plus populaire</div>
+            <div class="plan-header">
+              <div class="plan-name">Premium</div>
+              <div class="plan-price-wrap">
+                <span class="plan-currency">€</span>
+                <span class="plan-price" data-monthly="7.99" data-annual="6.39">7,99</span>
+                <span class="plan-per">/mois</span>
+              </div>
+              <div class="plan-billing-note" data-monthly="facturé mensuellement" data-annual="facturé 76,68 € / an">facturé mensuellement</div>
+            </div>
+
+            <button class="plan-btn plan-btn-filled" data-plan="premium">S'abonner</button>
+            <p class="plan-no-cc">Sans carte bancaire requise</p>
+
+            <hr class="plan-divider">
+            <p class="plan-features-title">Tout Essentiel, plus :</p>
+            <ul class="plan-features">
+              <li>✓ Résumés IA des articles</li>
+              <li>✓ Newsletters illimitées</li>
+              <li>✓ Formats multiples simultanés</li>
+              <li>✓ Stockage étendu (1 an)</li>
+              <li>✓ Support prioritaire</li>
+            </ul>
+          </div>
+
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- Modal Kindle manquant -->
+  <div id="kindle-missing-modal">
+    <div class="modal-box">
+      <h3>Adresse Kindle manquante</h3>
+      <p>Renseignez votre adresse Kindle dans votre profil pour pouvoir envoyer directement sur votre liseuse.</p>
+      <div class="modal-actions">
+        <button class="modal-btn modal-btn-cancel" id="kindle-modal-cancel">Fermer</button>
+        <button class="modal-btn modal-btn-primary" id="kindle-modal-go-profile">Aller au profil →</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="dashboard.js"></script>
+</body>
+</html>
