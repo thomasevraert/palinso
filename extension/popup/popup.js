@@ -1,5 +1,5 @@
 // ⚠️ REMPLACE PAR L'URL DE TON SERVEUR RAILWAY APRÈS DÉPLOIEMENT
-const API_BASE = 'https://TON-PROJET.up.railway.app/api';
+const API_BASE = 'https://kolio-production.up.railway.app/api';
 // Pour dev local :
 // const API_BASE = 'http://localhost:3000/api';
 
@@ -49,7 +49,6 @@ function getKindleEmailFromProfile() {
 // ── Session (JWT) ─────────────────────────────────────────────────
 chrome.storage.local.get(['token', 'name', 'email'], function(result) {
   if (!result.token) {
-    // Pas de token → redirige vers la page de connexion
     chrome.tabs.create({ url: chrome.runtime.getURL('auth/auth.html') });
     window.close();
     return;
@@ -61,7 +60,7 @@ chrome.storage.local.get(['token', 'name', 'email'], function(result) {
 
 // ── Déconnexion ───────────────────────────────────────────────────
 btnLogout.addEventListener('click', function() {
-  chrome.storage.local.remove(['token', 'name', 'email', 'kindleEmail'], function() {
+  chrome.storage.local.remove(['token', 'name', 'email', 'kindleEmail', 'subscription'], function() {
     chrome.tabs.create({ url: chrome.runtime.getURL('auth/auth.html') });
     window.close();
   });
@@ -85,7 +84,7 @@ document.getElementById('modal-go-profile').addEventListener('click', async func
   }
 });
 
-// ── Bandeau plan / essai ──────────────────────────────────────────
+// ── Bandeau plan / essai (depuis cache localStorage) ─────────────
 function loadPlanBanner() {
   chrome.storage.local.get(['subscription'], function(result) {
     const sub    = result.subscription || null;
@@ -98,22 +97,22 @@ function loadPlanBanner() {
       return;
     }
 
-    if (sub.billing === 'trial' && sub.trialEnd) {
-      const msLeft   = new Date(sub.trialEnd) - Date.now();
-      const daysLeft = Math.ceil(msLeft / (1000 * 60 * 60 * 24));
+    // Trial actif
+    if (sub.isTrialActive && sub.trialDaysLeft !== undefined) {
+      const daysLeft = sub.trialDaysLeft;
 
       if (daysLeft <= 0) {
-        banner.className     = 'trial-urgent';
-        icon.textContent     = '⚠️';
-        text.innerHTML       = '<strong>Essai expiré.</strong> Choisissez un plan dans le dashboard.';
+        banner.className = 'trial-urgent';
+        icon.textContent = '⚠️';
+        text.innerHTML   = '<strong>Essai expiré.</strong> Choisissez un plan dans le dashboard.';
       } else if (daysLeft <= 2) {
-        banner.className     = 'trial-urgent';
-        icon.textContent     = '⏳';
-        text.innerHTML       = '<strong>Essai Premium</strong> — plus que <strong>' + daysLeft + ' jour' + (daysLeft > 1 ? 's' : '') + '</strong> !';
+        banner.className = 'trial-urgent';
+        icon.textContent = '⏳';
+        text.innerHTML   = '<strong>Essai Premium</strong> — plus que <strong>' + daysLeft + ' jour' + (daysLeft > 1 ? 's' : '') + '</strong> !';
       } else {
-        banner.className     = 'trial';
-        icon.textContent     = '⭐';
-        text.innerHTML       = '<strong>Essai Premium</strong> en cours — <strong>' + daysLeft + ' jours</strong> restants';
+        banner.className = 'trial';
+        icon.textContent = '⭐';
+        text.innerHTML   = '<strong>Essai Premium</strong> en cours — <strong>' + daysLeft + ' jours</strong> restants';
       }
       banner.style.display = 'flex';
       return;
@@ -175,7 +174,7 @@ btnSend.addEventListener('click', async function() {
     });
 
     if (result.error === 'SESSION_EXPIRED') {
-      chrome.storage.local.remove(['token', 'name', 'email', 'kindleEmail'], () => {
+      chrome.storage.local.remove(['token', 'name', 'email', 'kindleEmail', 'subscription'], () => {
         chrome.tabs.create({ url: chrome.runtime.getURL('auth/auth.html') });
         window.close();
       });
@@ -215,7 +214,7 @@ btnKindle.addEventListener('click', async function() {
     const result = await chrome.runtime.sendMessage({ type: 'SEND_ARTICLE', payload });
 
     if (result.error === 'SESSION_EXPIRED') {
-      chrome.storage.local.remove(['token', 'name', 'email', 'kindleEmail'], () => {
+      chrome.storage.local.remove(['token', 'name', 'email', 'kindleEmail', 'subscription'], () => {
         chrome.tabs.create({ url: chrome.runtime.getURL('auth/auth.html') });
         window.close();
       });

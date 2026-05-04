@@ -5,6 +5,7 @@ const API_BASE = 'https://kolio-production.up.railway.app/api';
 
 let allArticles    = [];
 let activeCategory = 'all';
+let pollingTimer   = null;
 
 async function apiFetch(endpoint, options = {}) {
   const { token } = await chrome.storage.local.get('token');
@@ -63,7 +64,6 @@ document.querySelectorAll('.nav-item').forEach(item => {
   item.addEventListener('click', () => switchTab(item.dataset.tab));
 });
 
-// Clic sur le nom → profil
 document.getElementById('dashboard-user').addEventListener('click', () => switchTab('profile'));
 
 if (window.location.hash === '#profile') switchTab('profile');
@@ -72,7 +72,8 @@ if (window.location.hash === '#profile') switchTab('profile');
 loadArticles();
 
 document.getElementById('btn-logout-dashboard').addEventListener('click', () => {
-  chrome.storage.local.remove(['token', 'name', 'email', 'kindleEmail'], () => {
+  stopPolling();
+  chrome.storage.local.remove(['token', 'name', 'email', 'kindleEmail', 'subscription'], () => {
     window.location.href = chrome.runtime.getURL('auth/auth.html');
   });
 });
@@ -109,14 +110,12 @@ document.getElementById('articles-body').addEventListener('click', (e) => {
     cell.querySelector('.category-input').focus();
     return;
   }
-
   if (e.target.classList.contains('category-cancel-btn')) {
     const cell = e.target.closest('.category-cell');
     cell.querySelector('.category-edit-form').classList.remove('visible');
     cell.querySelector('.category-display').style.display = 'flex';
     return;
   }
-
   if (e.target.classList.contains('category-save-btn')) {
     const cell      = e.target.closest('.category-cell');
     const articleId = cell.dataset.id;
@@ -124,13 +123,10 @@ document.getElementById('articles-body').addEventListener('click', (e) => {
     saveCategory(articleId, value, cell);
     return;
   }
-
   const btn = e.target.closest('button[data-action]');
   if (!btn) return;
-
   const action    = btn.dataset.action;
   const articleId = btn.dataset.id;
-
   if (action === 'delete')      deleteArticle(articleId, btn);
   if (action === 'send-kindle') handleKindleSend(articleId, btn);
   if (action === 'download') {
@@ -156,6 +152,31 @@ document.getElementById('category-filters').addEventListener('click', (e) => {
   if (btn) setFilter(btn.dataset.category);
 });
 
+// ── Polling auto-refresh ──────────────────────────────────────────
+function startPolling() {
+  if (pollingTimer) return;
+  pollingTimer = setInterval(async () => {
+    const hasProcessing = allArticles.some(a => a.status === 'processing');
+    if (!hasProcessing) { stopPolling(); return; }
+    await silentRefresh();
+  }, 3000);
+}
+
+function stopPolling() {
+  if (pollingTimer) { clearInterval(pollingTimer); pollingTimer = null; }
+}
+
+async function silentRefresh() {
+  try {
+    const response = await apiFetch('/articles');
+    if (!response.ok) return;
+    allArticles = await response.json();
+    refreshCategoryFilters();
+    renderArticles();
+    if (!allArticles.some(a => a.status === 'processing')) stopPolling();
+  } catch { /* silencieux */ }
+}
+
 // ── Articles ──────────────────────────────────────────────────────
 async function loadArticles() {
   const loading = document.getElementById('loading');
@@ -168,18 +189,17 @@ async function loadArticles() {
 
   try {
     const response = await apiFetch('/articles');
-
     if (response.status === 401 || response.status === 403) {
-      chrome.storage.local.remove(['token', 'name', 'email', 'kindleEmail'], () => {
+      chrome.storage.local.remove(['token', 'name', 'email', 'kindleEmail', 'subscription'], () => {
         window.location.href = chrome.runtime.getURL('auth/auth.html');
       });
       return;
     }
-
     allArticles           = await response.json();
     loading.style.display = 'none';
     refreshCategoryFilters();
     renderArticles();
+    if (allArticles.some(a => a.status === 'processing')) startPolling();
   } catch {
     loading.textContent = '❌ Impossible de contacter le serveur.';
   }
@@ -251,17 +271,13 @@ function renderArticles() {
 
   table.style.display = 'table';
   empty.style.display = 'none';
-
   const countEl = document.getElementById('count-info');
   if (countEl) countEl.textContent = `${filtered.length} article${filtered.length > 1 ? 's' : ''}`;
 }
 
 async function handleKindleSend(articleId, btn) {
   const { kindleEmail } = await getUserFromStorage();
-  if (!kindleEmail) {
-    document.getElementById('kindle-missing-modal').classList.add('open');
-    return;
-  }
+  if (!kindleEmail) { document.getElementById('kindle-missing-modal').classList.add('open'); return; }
   btn.disabled = true; btn.textContent = '⏳';
   try {
     const response = await apiFetch('/kindle/send', {
@@ -297,7 +313,6 @@ async function saveProfile() {
     feedback.style.display = 'block';
     return;
   }
-
   chrome.storage.local.set({ name: newName, kindleEmail: kindleEmail || null }, () => {
     const userEl = document.getElementById('dashboard-user');
     if (userEl) userEl.textContent = newName;
@@ -381,7 +396,6 @@ function setFilter(category) {
   renderArticles();
 }
 
-// ── Téléchargement ────────────────────────────────────────────────
 async function downloadArticle(articleId, format, btn) {
   if (btn) { btn.disabled = true; btn.textContent = '⏳'; }
   try {
@@ -439,7 +453,7 @@ async function deleteAll() {
     const response = await apiFetch('/articles', { method: 'DELETE' });
     const result   = await response.json();
     if (result.success) {
-      allArticles = []; activeCategory = 'all';
+      stopPolling(); allArticles = []; activeCategory = 'all';
       refreshCategoryFilters(); renderArticles();
     } else alert(`❌ ${result.error}`);
   } catch (err) {
@@ -449,136 +463,199 @@ async function deleteAll() {
   }
 }
 
-// ── Abonnement ────────────────────────────────────────────────────
-function loadSubscription() {
+// ── Abonnement — source de vérité : backend ───────────────────────
+async function loadSubscription() {
+  const banner       = document.getElementById('current-plan-banner');
+  const trialBanner  = document.getElementById('trial-banner');
+  const trialInner   = document.getElementById('trial-banner-inner');
+  const trialIcon    = document.getElementById('trial-icon');
+  const trialText    = document.getElementById('trial-text');
+  const trialSubtext = document.getElementById('trial-subtext');
+
+  // Affiche un état de chargement
+  trialBanner.style.display = 'none';
+  banner.style.display      = 'none';
+
+  // Fetch depuis le backend (source de vérité)
+  let sub;
+  try {
+    const response = await apiFetch('/subscription');
+    if (!response.ok) throw new Error('Erreur');
+    sub = await response.json();
+    // Met à jour le cache localStorage
+    chrome.storage.local.set({ subscription: sub });
+  } catch {
+    // Fallback sur le cache localStorage si le backend est injoignable
+    sub = await new Promise(resolve => {
+      chrome.storage.local.get(['subscription'], r => resolve(r.subscription || { plan: 'free', billing: null }));
+    });
+  }
+
+  renderSubscriptionUI(sub);
+  setupSubscriptionActions(sub);
+}
+
+function renderSubscriptionUI(sub) {
+  const banner       = document.getElementById('current-plan-banner');
+  const trialBanner  = document.getElementById('trial-banner');
+  const trialInner   = document.getElementById('trial-banner-inner');
+  const trialIcon    = document.getElementById('trial-icon');
+  const trialText    = document.getElementById('trial-text');
+  const trialSubtext = document.getElementById('trial-subtext');
   const billingSwitch = document.getElementById('billing-switch');
   const labelMonthly  = document.getElementById('label-monthly');
   const labelAnnual   = document.getElementById('label-annual');
-  const banner        = document.getElementById('current-plan-banner');
-  const trialBanner   = document.getElementById('trial-banner');
-  const trialInner    = document.getElementById('trial-banner-inner');
-  const trialIcon     = document.getElementById('trial-icon');
-  const trialText     = document.getElementById('trial-text');
-  const trialSubtext  = document.getElementById('trial-subtext');
 
-  function renewalDate(since, billing) {
-    const d = new Date(since);
-    billing === 'annual' ? d.setFullYear(d.getFullYear() + 1) : d.setMonth(d.getMonth() + 1);
-    return d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
-  }
+  // ── Trial actif ───────────────────────────────────────────────
+  if (sub.isTrialActive) {
+    const daysLeft = sub.trialDaysLeft || 0;
+    trialBanner.style.display = 'block';
+    banner.style.display      = 'none';
 
-  function resetPlanButtons() {
-    document.querySelectorAll('.plan-btn').forEach(function(btn) {
-      const p = btn.dataset.plan;
-      if (p === 'free') { btn.textContent = 'Offre gratuite'; btn.disabled = true; btn.style.opacity = '0.45'; }
-      else { btn.disabled = false; btn.style.opacity = '1'; btn.textContent = "S'abonner"; }
-    });
-  }
-
-  chrome.storage.local.get(['subscription'], function(result) {
-    const sub = result.subscription || null;
-
-    if (sub && sub.billing === 'trial' && sub.trialEnd) {
-      const msLeft   = new Date(sub.trialEnd) - Date.now();
-      const daysLeft = Math.ceil(msLeft / (1000 * 60 * 60 * 24));
-      trialBanner.style.display = 'block';
-      banner.style.display      = 'none';
-
-      if (daysLeft <= 0) {
-        trialInner.className = 'trial-dashboard-banner trial-urgent';
-        trialIcon.textContent = '⚠️';
-        trialText.innerHTML   = '<strong>Votre essai Premium a expiré.</strong>';
-        trialSubtext.textContent = 'Choisissez un plan pour continuer à profiter de toutes les fonctionnalités.';
-      } else if (daysLeft <= 2) {
-        trialInner.className = 'trial-dashboard-banner trial-urgent';
-        trialIcon.textContent = '⏳';
-        trialText.innerHTML   = '<strong>Plus que ' + daysLeft + ' jour' + (daysLeft > 1 ? 's' : '') + " d'essai Premium !</strong>";
-        trialSubtext.textContent = 'Abonnez-vous maintenant pour ne pas perdre vos accès.';
-      } else {
-        trialInner.className = 'trial-dashboard-banner trial';
-        trialIcon.textContent = '⭐';
-        trialText.innerHTML   = '<strong>Essai Premium en cours</strong> — ' + daysLeft + ' jours restants';
-        trialSubtext.textContent = "Profitez de toutes les fonctionnalités Premium jusqu'au " +
-          new Date(sub.trialEnd).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
-      }
-
-      resetPlanButtons();
-      document.querySelectorAll('.plan-btn[data-plan="premium"]').forEach(function(b) {
-        b.textContent = 'Essai en cours'; b.disabled = true; b.style.opacity = '0.55';
-      });
-      return;
-    }
-
-    trialBanner.style.display = 'none';
-
-    if (sub && sub.plan !== 'free') {
-      const planLabel    = sub.plan === 'premium' ? 'Premium' : 'Essentiel';
-      const billingLabel = sub.billing === 'annual' ? 'annuel' : 'mensuel';
-      banner.style.display = 'flex';
-      document.getElementById('current-plan-text').innerHTML =
-        '✦ Plan actif : <strong>' + planLabel + '</strong> (' + billingLabel + ')' +
-        ' &nbsp;·&nbsp; Renouvellement le <strong>' + renewalDate(sub.since, sub.billing) + '</strong>';
-      resetPlanButtons();
-      document.querySelectorAll('.plan-btn').forEach(function(btn) {
-        if (btn.dataset.plan === sub.plan) { btn.textContent = 'Plan actuel'; btn.disabled = true; btn.style.opacity = '0.55'; }
-        if (btn.dataset.plan === 'free') { btn.textContent = "Résilier l'abonnement"; btn.disabled = false; btn.style.opacity = '1'; btn.className = 'plan-btn plan-btn-ghost'; }
-      });
+    if (daysLeft <= 2) {
+      trialInner.className     = 'trial-dashboard-banner trial-urgent';
+      trialIcon.textContent    = '⏳';
+      trialText.innerHTML      = '<strong>Plus que ' + daysLeft + ' jour' + (daysLeft > 1 ? 's' : '') + " d'essai Premium !</strong>";
+      trialSubtext.textContent = 'Abonnez-vous maintenant pour ne pas perdre vos accès.';
     } else {
-      banner.style.display = 'none';
-      resetPlanButtons();
-      document.querySelectorAll('.plan-btn[data-plan="free"]').forEach(function(b) {
-        b.textContent = 'Plan actuel'; b.disabled = true; b.style.opacity = '0.55';
-      });
+      trialInner.className     = 'trial-dashboard-banner trial';
+      trialIcon.textContent    = '⭐';
+      trialText.innerHTML      = '<strong>Essai Premium en cours</strong> — ' + daysLeft + ' jours restants';
+      trialSubtext.textContent = sub.trialEnd
+        ? "Profitez de toutes les fonctionnalités Premium jusqu'au " +
+          new Date(sub.trialEnd).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })
+        : '';
     }
-  });
 
-  function updatePrices(isAnnual) {
-    labelMonthly.classList.toggle('active', !isAnnual);
-    labelAnnual.classList.toggle('active', isAnnual);
-    document.querySelectorAll('.plan-price').forEach(function(el) {
-      el.textContent = parseFloat(isAnnual ? el.dataset.annual : el.dataset.monthly).toFixed(2).replace('.', ',');
+    resetPlanButtons();
+    document.querySelectorAll('.plan-btn[data-plan="premium"]').forEach(b => {
+      b.textContent = 'Essai en cours'; b.disabled = true; b.style.opacity = '0.55';
     });
-    document.querySelectorAll('.plan-billing-note').forEach(function(el) {
-      el.textContent = isAnnual ? el.dataset.annual : el.dataset.monthly;
+    updatePrices(billingSwitch.checked, labelMonthly, labelAnnual);
+    return;
+  }
+
+  trialBanner.style.display = 'none';
+
+  // ── Plan payant actif ─────────────────────────────────────────
+  if (sub.plan !== 'free') {
+    const planLabel    = sub.plan === 'premium' ? 'Premium' : 'Essentiel';
+    const billingLabel = sub.billing === 'annual' ? 'annuel' : 'mensuel';
+    const renewalDate  = sub.subscribedAt
+      ? (() => {
+          const d = new Date(sub.subscribedAt);
+          sub.billing === 'annual' ? d.setFullYear(d.getFullYear() + 1) : d.setMonth(d.getMonth() + 1);
+          return d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+        })()
+      : '—';
+
+    banner.style.display = 'flex';
+    document.getElementById('current-plan-text').innerHTML =
+      '✦ Plan actif : <strong>' + planLabel + '</strong> (' + billingLabel + ')' +
+      ' &nbsp;·&nbsp; Renouvellement le <strong>' + renewalDate + '</strong>';
+
+    resetPlanButtons();
+    document.querySelectorAll('.plan-btn').forEach(btn => {
+      if (btn.dataset.plan === sub.plan) { btn.textContent = 'Plan actuel'; btn.disabled = true; btn.style.opacity = '0.55'; }
+      if (btn.dataset.plan === 'free')   { btn.textContent = "Résilier l'abonnement"; btn.disabled = false; btn.style.opacity = '1'; btn.className = 'plan-btn plan-btn-ghost'; }
+    });
+  } else {
+    // ── Plan gratuit ──────────────────────────────────────────────
+    banner.style.display = 'none';
+    resetPlanButtons();
+    document.querySelectorAll('.plan-btn[data-plan="free"]').forEach(b => {
+      b.textContent = 'Plan actuel'; b.disabled = true; b.style.opacity = '0.55';
     });
   }
 
-  updatePrices(billingSwitch.checked);
+  updatePrices(billingSwitch.checked, labelMonthly, labelAnnual);
+}
 
+function resetPlanButtons() {
+  document.querySelectorAll('.plan-btn').forEach(btn => {
+    const p = btn.dataset.plan;
+    if (p === 'free') { btn.textContent = 'Offre gratuite'; btn.disabled = true; btn.style.opacity = '0.45'; }
+    else { btn.disabled = false; btn.style.opacity = '1'; btn.textContent = "S'abonner"; }
+  });
+}
+
+function updatePrices(isAnnual, labelMonthly, labelAnnual) {
+  const lm = labelMonthly || document.getElementById('label-monthly');
+  const la = labelAnnual  || document.getElementById('label-annual');
+  lm.classList.toggle('active', !isAnnual);
+  la.classList.toggle('active',  isAnnual);
+  document.querySelectorAll('.plan-price').forEach(el => {
+    el.textContent = parseFloat(isAnnual ? el.dataset.annual : el.dataset.monthly).toFixed(2).replace('.', ',');
+  });
+  document.querySelectorAll('.plan-billing-note').forEach(el => {
+    el.textContent = isAnnual ? el.dataset.annual : el.dataset.monthly;
+  });
+}
+
+function setupSubscriptionActions(currentSub) {
+  const billingSwitch = document.getElementById('billing-switch');
+  const labelMonthly  = document.getElementById('label-monthly');
+  const labelAnnual   = document.getElementById('label-annual');
+
+  // Toggle mensuel/annuel
   const freshSwitch = billingSwitch.cloneNode(true);
   billingSwitch.parentNode.replaceChild(freshSwitch, billingSwitch);
-  freshSwitch.addEventListener('change', function() { updatePrices(freshSwitch.checked); });
+  freshSwitch.addEventListener('change', () => updatePrices(freshSwitch.checked, labelMonthly, labelAnnual));
 
+  // CTA trial
   const trialCta = document.getElementById('trial-cta');
   const freshCta = trialCta.cloneNode(true);
   trialCta.parentNode.replaceChild(freshCta, trialCta);
-  freshCta.addEventListener('click', function() {
+  freshCta.addEventListener('click', () => {
     document.getElementById('plan-essentiel').scrollIntoView({ behavior: 'smooth', block: 'center' });
   });
 
-  document.querySelectorAll('.plan-btn').forEach(function(btn) {
+  // Boutons plans
+  document.querySelectorAll('.plan-btn').forEach(btn => {
     const freshBtn = btn.cloneNode(true);
     btn.parentNode.replaceChild(freshBtn, btn);
-    freshBtn.addEventListener('click', function() {
+    freshBtn.addEventListener('click', async () => {
       if (freshBtn.disabled) return;
       const plan    = freshBtn.dataset.plan;
       const billing = document.getElementById('billing-switch')?.checked ? 'annual' : 'monthly';
 
       if (plan === 'free') {
         if (!confirm("Résilier votre abonnement ? Vous reviendrez sur l'offre gratuite.")) return;
-        chrome.storage.local.remove('subscription', loadSubscription);
-        return;
       }
-      chrome.storage.local.set({ subscription: { plan, billing, since: new Date().toISOString() } }, loadSubscription);
+
+      try {
+        const response = await apiFetch('/subscription', {
+          method: 'POST',
+          body: JSON.stringify({ plan, billing: plan === 'free' ? null : billing }),
+        });
+        const newSub = await response.json();
+        chrome.storage.local.set({ subscription: newSub });
+        renderSubscriptionUI(newSub);
+        setupSubscriptionActions(newSub);
+      } catch (err) {
+        alert(`❌ Erreur : ${err.message}`);
+      }
     });
   });
 
+  // Résiliation via bouton dans le bandeau
   const btnCancel   = document.getElementById('btn-cancel-plan');
   const freshCancel = btnCancel.cloneNode(true);
   btnCancel.parentNode.replaceChild(freshCancel, btnCancel);
-  freshCancel.addEventListener('click', function() {
+  freshCancel.addEventListener('click', async () => {
     if (!confirm("Résilier votre abonnement ? Vous conserverez l'accès jusqu'à la fin de la période en cours.")) return;
-    chrome.storage.local.remove('subscription', loadSubscription);
+    try {
+      const response = await apiFetch('/subscription', {
+        method: 'POST',
+        body: JSON.stringify({ plan: 'free', billing: null }),
+      });
+      const newSub = await response.json();
+      chrome.storage.local.set({ subscription: newSub });
+      renderSubscriptionUI(newSub);
+      setupSubscriptionActions(newSub);
+    } catch (err) {
+      alert(`❌ Erreur : ${err.message}`);
+    }
   });
 }
 

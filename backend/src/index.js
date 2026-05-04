@@ -8,11 +8,11 @@ app.use(cors({ origin: '*' }));
 app.use(express.json({ limit: '5mb' }));
 
 // ── Routes ────────────────────────────────────────────────────────
-app.use('/api/auth',     require('./routes/auth'));
-app.use('/api/articles', require('./routes/articles'));
-app.use('/api/kindle',   require('./routes/kindle'));
+app.use('/api/auth',         require('./routes/auth'));
+app.use('/api/articles',     require('./routes/articles'));
+app.use('/api/kindle',       require('./routes/kindle'));
+app.use('/api/subscription', require('./routes/subscription'));
 
-// Route de vérification
 app.get('/health', (req, res) => {
   res.json({ ok: true, message: 'Serveur KTool Clone opérationnel' });
 });

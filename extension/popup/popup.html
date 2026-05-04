@@ -102,6 +102,56 @@
     /* ── Corps ── */
     .main { padding: 16px; }
 
+    /* ── Statut — en haut pour visibilité ── */
+    #status {
+      margin-bottom: 12px;
+      padding: 9px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      display: none;
+      line-height: 1.4;
+    }
+
+    .status-success { background: #ecf5ec; color: #1d5e1d; border: 1px solid #b8d8b8; }
+    .status-error   { background: #fdf2f1; color: #8b2020; border: 1px solid #f0c5c1; }
+    .status-info    { background: #eaf0f7; color: #034C8C; border: 1px solid #b8cedf; }
+
+    /* ── Bandeau plan / essai ── */
+    #plan-banner {
+      display: none;
+      margin-bottom: 12px;
+      border-radius: 9px;
+      padding: 9px 12px;
+      font-size: 11px;
+      font-weight: 500;
+      line-height: 1.4;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    #plan-banner.trial {
+      background: linear-gradient(135deg, rgba(3,76,140,0.08), rgba(90,126,140,0.10));
+      border: 1px solid rgba(3,76,140,0.18);
+      color: var(--navy);
+    }
+
+    #plan-banner.active-plan {
+      background: rgba(166,138,86,0.09);
+      border: 1px solid rgba(166,138,86,0.25);
+      color: #6b5a2e;
+    }
+
+    #plan-banner.trial-urgent {
+      background: rgba(192,57,43,0.07);
+      border: 1px solid rgba(192,57,43,0.2);
+      color: #8b2020;
+    }
+
+    .plan-banner-icon { font-size: 14px; flex-shrink: 0; }
+    .plan-banner-text { flex: 1; }
+    .plan-banner-text strong { font-weight: 700; }
+
     /* ── Champs ── */
     .field-group { margin-bottom: 11px; }
 
@@ -227,20 +277,6 @@
       line-height: 1.5;
     }
 
-    /* ── Statut ── */
-    #status {
-      margin-top: 10px;
-      padding: 9px 12px;
-      border-radius: 8px;
-      font-size: 12px;
-      display: none;
-      line-height: 1.4;
-    }
-
-    .status-success { background: #ecf5ec; color: #1d5e1d; border: 1px solid #b8d8b8; }
-    .status-error   { background: #fdf2f1; color: #8b2020; border: 1px solid #f0c5c1; }
-    .status-info    { background: #eaf0f7; color: #034C8C; border: 1px solid #b8cedf; }
-
     /* ── Modal ── */
     #kindle-modal {
       display: none;
@@ -294,42 +330,6 @@
     .modal-btn-primary:hover { background: #023d72; }
     .modal-btn-cancel { background: var(--cream); color: var(--teal); border: 1px solid #c5c3b0; }
     .modal-btn-cancel:hover { background: #e8e6d4; }
-
-    /* ── Bandeau plan / essai ── */
-    #plan-banner {
-      display: none;
-      margin-bottom: 12px;
-      border-radius: 9px;
-      padding: 9px 12px;
-      font-size: 11px;
-      font-weight: 500;
-      line-height: 1.4;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-    }
-
-    #plan-banner.trial {
-      background: linear-gradient(135deg, rgba(3,76,140,0.08), rgba(90,126,140,0.10));
-      border: 1px solid rgba(3,76,140,0.18);
-      color: var(--navy);
-    }
-
-    #plan-banner.active-plan {
-      background: rgba(166,138,86,0.09);
-      border: 1px solid rgba(166,138,86,0.25);
-      color: #6b5a2e;
-    }
-
-    #plan-banner.trial-urgent {
-      background: rgba(192,57,43,0.07);
-      border: 1px solid rgba(192,57,43,0.2);
-      color: #8b2020;
-    }
-
-    .plan-banner-icon { font-size: 14px; flex-shrink: 0; }
-    .plan-banner-text { flex: 1; }
-    .plan-banner-text strong { font-weight: 700; }
   </style>
 </head>
 <body>
@@ -351,6 +351,9 @@
 
   <!-- Corps -->
   <div class="main">
+
+    <!-- Statut en haut — visible sans scroller -->
+    <div id="status"></div>
 
     <!-- Bandeau plan actuel / essai -->
     <div id="plan-banner">
@@ -392,7 +395,6 @@
       💡 Abonné à un site ? Si vous pouvez lire l'article, vous pouvez l'enregistrer sur votre liseuse.
     </div>
 
-    <div id="status"></div>
   </div>
 
   <!-- Modal Kindle manquant -->

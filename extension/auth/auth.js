@@ -71,27 +71,16 @@ document.getElementById('btn-signup').addEventListener('click', async () => {
       return;
     }
 
-    const trialEnd = new Date();
-    trialEnd.setDate(trialEnd.getDate() + 7);
-    const trial = {
-      plan:     'premium',
-      billing:  'trial',
-      since:    new Date().toISOString(),
-      trialEnd: trialEnd.toISOString(),
-    };
-
-    // Conserve le plan existant s'il y en a déjà un
-    chrome.storage.local.get(['subscription'], (existing) => {
-      chrome.storage.local.set({
-        token:        data.token,
-        email:        data.email,
-        name:         data.name,
-        kindleEmail:  kindleEmail || null,
-        subscription: existing.subscription || trial,
-      }, () => {
-        showSuccess('signup-success', 'Compte créé ! Bienvenue ' + name + ' 🎉 — 7 jours Premium offerts');
-        setTimeout(openDashboard, 1500);
-      });
+    // Sauvegarde token + subscription retournée par le backend
+    chrome.storage.local.set({
+      token:        data.token,
+      email:        data.email,
+      name:         data.name,
+      kindleEmail:  kindleEmail || null,
+      subscription: data.subscription || null,
+    }, () => {
+      showSuccess('signup-success', 'Compte créé ! Bienvenue ' + name + ' 🎉 — 7 jours Premium offerts');
+      setTimeout(openDashboard, 1500);
     });
 
   } catch {
@@ -129,20 +118,14 @@ document.getElementById('btn-login').addEventListener('click', async () => {
       return;
     }
 
-    // Conserve subscription existante — ne pas l'écraser lors d'une reconnexion
-    chrome.storage.local.get(['subscription'], (existing) => {
-      const toSave = {
-        token:       data.token,
-        email:       data.email,
-        name:        data.name || data.email,
-        kindleEmail: data.kindleEmail || null,
-      };
-      // On ne touche à subscription que si elle n'existe pas déjà
-      if (!existing.subscription) {
-        toSave.subscription = null;
-      }
-      chrome.storage.local.set(toSave, openDashboard);
-    });
+    // Le backend retourne le plan effectif (trial expiré → free automatiquement)
+    chrome.storage.local.set({
+      token:        data.token,
+      email:        data.email,
+      name:         data.name || data.email,
+      kindleEmail:  data.kindleEmail || null,
+      subscription: data.subscription || null,
+    }, openDashboard);
 
   } catch {
     showError('login-error', 'Impossible de joindre le serveur. Vérifie ta connexion.');

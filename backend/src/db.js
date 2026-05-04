@@ -1,16 +1,14 @@
 /**
  * db.js — Base de données
  *
- * En local (dev) : SQLite — rien à configurer, fonctionne tel quel
- * En production  : PostgreSQL via Railway (variable DATABASE_URL automatique)
+ * Schéma users (colonnes subscription) :
+ *   plan          TEXT    DEFAULT 'free'   → free | essentiel | premium
+ *   billing       TEXT    DEFAULT NULL     → monthly | annual | NULL (free)
+ *   subscribed_at TEXT/TIMESTAMPTZ NULL    → date de souscription PAYANTE (pas le trial)
+ *   trial_end     TEXT/TIMESTAMPTZ NULL    → date de fin du trial (7j après inscription)
  *
- * API unifiée (toujours async) :
- *   await db.run(sql, params)   → INSERT / UPDATE / DELETE
- *   await db.get(sql, params)   → SELECT une ligne
- *   await db.all(sql, params)   → SELECT plusieurs lignes
- *
- * Les requêtes SQL utilisent la syntaxe PostgreSQL ($1, $2, $3...)
- * Le wrapper SQLite les convertit automatiquement en ? pour SQLite.
+ * Règle métier : si trial_end < NOW() → le trial est expiré → plan effectif = free
+ * Cette règle est appliquée côté backend à chaque appel /api/subscription
  */
 
 let db;
@@ -25,12 +23,16 @@ if (process.env.DATABASE_URL) {
 
   pool.query(`
     CREATE TABLE IF NOT EXISTS users (
-      id           TEXT PRIMARY KEY,
-      email        TEXT UNIQUE NOT NULL,
-      password     TEXT NOT NULL,
-      name         TEXT,
-      kindle_email TEXT,
-      created_at   TIMESTAMPTZ DEFAULT NOW()
+      id            TEXT PRIMARY KEY,
+      email         TEXT UNIQUE NOT NULL,
+      password      TEXT NOT NULL,
+      name          TEXT,
+      kindle_email  TEXT,
+      plan          TEXT DEFAULT 'free',
+      billing       TEXT DEFAULT NULL,
+      subscribed_at TIMESTAMPTZ DEFAULT NULL,
+      trial_end     TIMESTAMPTZ DEFAULT NULL,
+      created_at    TIMESTAMPTZ DEFAULT NOW()
     );
 
     CREATE TABLE IF NOT EXISTS articles (
@@ -79,12 +81,16 @@ if (process.env.DATABASE_URL) {
 
   sqlite.exec(`
     CREATE TABLE IF NOT EXISTS users (
-      id           TEXT PRIMARY KEY,
-      email        TEXT UNIQUE NOT NULL,
-      password     TEXT NOT NULL,
-      name         TEXT,
-      kindle_email TEXT,
-      created_at   TEXT DEFAULT (datetime('now'))
+      id            TEXT PRIMARY KEY,
+      email         TEXT UNIQUE NOT NULL,
+      password      TEXT NOT NULL,
+      name          TEXT,
+      kindle_email  TEXT,
+      plan          TEXT DEFAULT 'free',
+      billing       TEXT DEFAULT NULL,
+      subscribed_at TEXT DEFAULT NULL,
+      trial_end     TEXT DEFAULT NULL,
+      created_at    TEXT DEFAULT (datetime('now'))
     );
 
     CREATE TABLE IF NOT EXISTS articles (
@@ -109,19 +115,22 @@ if (process.env.DATABASE_URL) {
     );
   `);
 
-  // Migrations pour les bases existantes (qui n'ont pas encore user_id, format, category)
+  // Migrations pour les bases existantes
   const migrations = [
     `ALTER TABLE articles ADD COLUMN category TEXT DEFAULT NULL`,
     `ALTER TABLE articles ADD COLUMN format TEXT DEFAULT 'epub3'`,
     `ALTER TABLE articles ADD COLUMN user_id TEXT`,
     `ALTER TABLE users ADD COLUMN name TEXT`,
     `ALTER TABLE users ADD COLUMN kindle_email TEXT`,
+    `ALTER TABLE users ADD COLUMN plan TEXT DEFAULT 'free'`,
+    `ALTER TABLE users ADD COLUMN billing TEXT DEFAULT NULL`,
+    `ALTER TABLE users ADD COLUMN subscribed_at TEXT DEFAULT NULL`,
+    `ALTER TABLE users ADD COLUMN trial_end TEXT DEFAULT NULL`,
   ];
   for (const sql of migrations) {
-    try { sqlite.exec(sql); } catch { /* colonne déjà existante, on ignore */ }
+    try { sqlite.exec(sql); } catch { /* colonne déjà existante */ }
   }
 
-  // Convertit $1, $2, $3... → ? pour SQLite
   const toSQLite = (sql) => sql.replace(/\$\d+/g, '?');
 
   db = {
