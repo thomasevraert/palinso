@@ -71,7 +71,6 @@ document.getElementById('btn-signup').addEventListener('click', async () => {
       return;
     }
 
-    // Essai Premium 7 jours automatique (stocké localement pour l'UI)
     const trialEnd = new Date();
     trialEnd.setDate(trialEnd.getDate() + 7);
     const trial = {
@@ -81,15 +80,18 @@ document.getElementById('btn-signup').addEventListener('click', async () => {
       trialEnd: trialEnd.toISOString(),
     };
 
-    chrome.storage.local.set({
-      token:        data.token,
-      email:        data.email,
-      name:         data.name,
-      kindleEmail:  kindleEmail || null,
-      subscription: trial,
-    }, () => {
-      showSuccess('signup-success', `Compte créé ! Bienvenue ${name} 🎉 — 7 jours Premium offerts`);
-      setTimeout(openDashboard, 1500);
+    // Conserve le plan existant s'il y en a déjà un
+    chrome.storage.local.get(['subscription'], (existing) => {
+      chrome.storage.local.set({
+        token:        data.token,
+        email:        data.email,
+        name:         data.name,
+        kindleEmail:  kindleEmail || null,
+        subscription: existing.subscription || trial,
+      }, () => {
+        showSuccess('signup-success', 'Compte créé ! Bienvenue ' + name + ' 🎉 — 7 jours Premium offerts');
+        setTimeout(openDashboard, 1500);
+      });
     });
 
   } catch {
@@ -127,12 +129,20 @@ document.getElementById('btn-login').addEventListener('click', async () => {
       return;
     }
 
-    chrome.storage.local.set({
-      token:       data.token,
-      email:       data.email,
-      name:        data.name || data.email,
-      kindleEmail: data.kindleEmail || null,
-    }, openDashboard);
+    // Conserve subscription existante — ne pas l'écraser lors d'une reconnexion
+    chrome.storage.local.get(['subscription'], (existing) => {
+      const toSave = {
+        token:       data.token,
+        email:       data.email,
+        name:        data.name || data.email,
+        kindleEmail: data.kindleEmail || null,
+      };
+      // On ne touche à subscription que si elle n'existe pas déjà
+      if (!existing.subscription) {
+        toSave.subscription = null;
+      }
+      chrome.storage.local.set(toSave, openDashboard);
+    });
 
   } catch {
     showError('login-error', 'Impossible de joindre le serveur. Vérifie ta connexion.');
