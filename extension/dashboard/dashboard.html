@@ -789,6 +789,91 @@
     .plan-features li:last-child { border-bottom: none; }
     .plan-features li.disabled { color: var(--mist); text-decoration: line-through; opacity: 0.5; }
 
+    /* ── Barre de quota ── */
+    .quota-bar {
+      background: var(--white);
+      border-radius: 12px;
+      padding: 14px 18px;
+      margin-bottom: 18px;
+      border: 1px solid var(--border);
+      box-shadow: 0 1px 3px rgba(3,31,45,0.04);
+    }
+
+    .quota-bar-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+
+    .quota-bar-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--ink);
+    }
+
+    .quota-bar-plan {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--mist);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .quota-progress-track {
+      height: 6px;
+      background: #ece9d6;
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .quota-progress-fill {
+      height: 100%;
+      border-radius: 3px;
+      background: var(--navy);
+      transition: width 0.4s ease, background 0.3s;
+    }
+
+    .quota-progress-fill.warning { background: #c07a1a; }
+    .quota-progress-fill.danger  { background: #8b2020; }
+
+    .quota-upgrade-cta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 10px;
+      padding: 10px 14px;
+      background: rgba(192,122,26,0.07);
+      border: 1px solid rgba(192,122,26,0.22);
+      border-radius: 8px;
+      font-size: 12px;
+      color: #7a4e10;
+    }
+
+    .quota-upgrade-cta.danger {
+      background: rgba(139,32,32,0.06);
+      border-color: rgba(139,32,32,0.2);
+      color: #6b1616;
+    }
+
+    .quota-upgrade-btn {
+      flex-shrink: 0;
+      padding: 6px 14px;
+      background: var(--navy);
+      color: white;
+      border: none;
+      border-radius: 7px;
+      font-size: 11px;
+      font-weight: 700;
+      font-family: 'DM Sans', sans-serif;
+      cursor: pointer;
+      transition: background 0.15s;
+      white-space: nowrap;
+    }
+
+    .quota-upgrade-btn:hover { background: #023d72; }
+
     /* ── Champ mot de passe avec bouton toggle ── */
     .password-input-wrap {
       position: relative;
@@ -860,6 +945,21 @@
           </div>
           <button class="refresh-btn" id="refresh-btn">↻ Rafraîchir</button>
           <button id="btn-delete-all">🗑 Tout supprimer</button>
+        </div>
+
+        <!-- Barre de consommation mensuelle -->
+        <div id="quota-bar" class="quota-bar" style="display:none">
+          <div class="quota-bar-header">
+            <span class="quota-bar-label" id="quota-bar-label">0 / 5 articles ce mois</span>
+            <span class="quota-bar-plan" id="quota-bar-plan">Offre Gratuite</span>
+          </div>
+          <div class="quota-progress-track">
+            <div class="quota-progress-fill" id="quota-progress-fill" style="width:0%"></div>
+          </div>
+          <div id="quota-upgrade-cta" class="quota-upgrade-cta" style="display:none">
+            <span id="quota-upgrade-text"></span>
+            <button class="quota-upgrade-btn" id="btn-quota-upgrade">Passer à l'offre supérieure →</button>
+          </div>
         </div>
 
         <div class="count-info" id="count-info"></div>

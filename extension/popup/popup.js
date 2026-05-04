@@ -84,6 +84,37 @@ document.getElementById('modal-go-profile').addEventListener('click', async func
   }
 });
 
+// ── Modal quota dépassé ───────────────────────────────────────────
+const quotaModal = document.getElementById('quota-modal');
+
+document.getElementById('quota-modal-cancel').addEventListener('click', function() {
+  quotaModal.classList.remove('open');
+});
+
+document.getElementById('quota-modal-upgrade').addEventListener('click', async function() {
+  quotaModal.classList.remove('open');
+  const dashboardUrl = chrome.runtime.getURL('dashboard/dashboard.html');
+  const tabs = await chrome.tabs.query({ url: dashboardUrl });
+  if (tabs.length > 0) {
+    chrome.tabs.update(tabs[0].id, { active: true });
+    chrome.windows.update(tabs[0].windowId, { focused: true });
+    chrome.tabs.sendMessage(tabs[0].id, { type: 'OPEN_SUBSCRIPTION' });
+  } else {
+    chrome.tabs.create({ url: dashboardUrl + '#subscription' });
+  }
+});
+
+function showQuotaModal(quota) {
+  const planLabels = { free: 'Gratuit', essentiel: 'Essentiel', premium: 'Premium' };
+  const nextPlan   = { free: 'Essentiel', essentiel: 'Premium' };
+  const planLabel  = planLabels[quota.plan] || quota.plan;
+  const next       = nextPlan[quota.plan];
+  const textEl     = document.getElementById('quota-modal-text');
+  textEl.textContent = `Vous avez utilisé vos ${quota.limit} conversions de ce mois (offre ${planLabel}).`
+    + (next ? ` Passez à l'offre ${next} pour en obtenir davantage.` : '');
+  quotaModal.classList.add('open');
+}
+
 // ── Bandeau plan / essai (depuis cache localStorage) ─────────────
 function loadPlanBanner() {
   chrome.storage.local.get(['subscription'], function(result) {
@@ -181,7 +212,8 @@ btnSend.addEventListener('click', async function() {
       return;
     }
 
-    if (result.error) showStatus('❌ Erreur : ' + result.error, 'error');
+    if (result.error === 'QUOTA_EXCEEDED') { showQuotaModal(result.quota); }
+    else if (result.error) showStatus('❌ Erreur : ' + result.error, 'error');
     else showStatus('✅ En cours de traitement en ' + selectedFormat.toUpperCase() + ' ! Vérifie le dashboard.', 'success');
 
   } catch (err) {
@@ -221,7 +253,8 @@ btnKindle.addEventListener('click', async function() {
       return;
     }
 
-    if (result.error) showStatus('❌ Erreur : ' + result.error, 'error');
+    if (result.error === 'QUOTA_EXCEEDED') { showQuotaModal(result.quota); }
+    else if (result.error) showStatus('❌ Erreur : ' + result.error, 'error');
     else showStatus("✅ En cours d'envoi vers votre Kindle ! Vérifiez dans quelques minutes.", 'success');
 
   } catch (err) {

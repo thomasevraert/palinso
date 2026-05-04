@@ -43,8 +43,9 @@ chrome.storage.local.get(['token', 'name', 'email'], (result) => {
 
 // ── Messages depuis le popup ──────────────────────────────────────
 chrome.runtime.onMessage.addListener((message) => {
-  if (message.type === 'REFRESH_ARTICLES') loadArticles();
-  if (message.type === 'OPEN_PROFILE')     switchTab('profile');
+  if (message.type === 'REFRESH_ARTICLES')  loadArticles();
+  if (message.type === 'OPEN_PROFILE')      switchTab('profile');
+  if (message.type === 'OPEN_SUBSCRIPTION') switchTab('subscription');
 });
 
 // ── Navigation ────────────────────────────────────────────────────
@@ -66,7 +67,8 @@ document.querySelectorAll('.nav-item').forEach(item => {
 
 document.getElementById('dashboard-user').addEventListener('click', () => switchTab('profile'));
 
-if (window.location.hash === '#profile') switchTab('profile');
+if (window.location.hash === '#profile')      switchTab('profile');
+if (window.location.hash === '#subscription') switchTab('subscription');
 
 // ── Init ──────────────────────────────────────────────────────────
 loadArticles();
@@ -188,20 +190,67 @@ async function loadArticles() {
   empty.style.display   = 'none';
 
   try {
-    const response = await apiFetch('/articles');
-    if (response.status === 401 || response.status === 403) {
+    const [articlesRes, quotaRes] = await Promise.all([
+      apiFetch('/articles'),
+      apiFetch('/articles/quota'),
+    ]);
+    if (articlesRes.status === 401 || articlesRes.status === 403) {
       chrome.storage.local.remove(['token', 'name', 'email', 'kindleEmail', 'subscription'], () => {
         window.location.href = chrome.runtime.getURL('auth/auth.html');
       });
       return;
     }
-    allArticles           = await response.json();
+    allArticles           = await articlesRes.json();
     loading.style.display = 'none';
     refreshCategoryFilters();
     renderArticles();
     if (allArticles.some(a => a.status === 'processing')) startPolling();
+
+    if (quotaRes.ok) {
+      const quota = await quotaRes.json();
+      renderQuotaBar(quota);
+    }
   } catch {
     loading.textContent = '❌ Impossible de contacter le serveur.';
+  }
+}
+
+const PLAN_LABELS = { free: 'Offre Gratuite', essentiel: 'Offre Essentiel', premium: 'Offre Premium' };
+const NEXT_PLAN   = { free: 'essentiel', essentiel: 'premium' };
+
+function renderQuotaBar(quota) {
+  const bar         = document.getElementById('quota-bar');
+  const labelEl     = document.getElementById('quota-bar-label');
+  const planEl      = document.getElementById('quota-bar-plan');
+  const fill        = document.getElementById('quota-progress-fill');
+  const cta         = document.getElementById('quota-upgrade-cta');
+  const ctaText     = document.getElementById('quota-upgrade-text');
+  const ctaBtn      = document.getElementById('btn-quota-upgrade');
+
+  // Les utilisateurs Premium n'ont pas de limite — on cache la barre
+  if (quota.limit === null) { bar.style.display = 'none'; return; }
+
+  bar.style.display = 'block';
+  labelEl.textContent = `${quota.used} / ${quota.limit} article${quota.limit > 1 ? 's' : ''} ce mois`;
+  planEl.textContent  = PLAN_LABELS[quota.plan] || quota.plan;
+
+  const pct = Math.min(100, Math.round((quota.used / quota.limit) * 100));
+  fill.style.width = `${pct}%`;
+  fill.className   = 'quota-progress-fill' +
+    (pct >= 100 ? ' danger' : pct >= 80 ? ' warning' : '');
+
+  if (pct >= 80) {
+    cta.style.display = 'flex';
+    cta.className     = 'quota-upgrade-cta' + (pct >= 100 ? ' danger' : '');
+    ctaText.textContent = pct >= 100
+      ? `Quota atteint — passez à l'offre supérieure pour continuer à convertir.`
+      : `Vous avez utilisé ${pct}% de votre quota mensuel.`;
+
+    const freshBtn = ctaBtn.cloneNode(true);
+    ctaBtn.parentNode.replaceChild(freshBtn, ctaBtn);
+    freshBtn.addEventListener('click', () => switchTab('subscription'));
+  } else {
+    cta.style.display = 'none';
   }
 }
 

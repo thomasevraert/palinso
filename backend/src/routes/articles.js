@@ -9,6 +9,23 @@ const fs   = require('fs');
 const path = require('path');
 
 const authMiddleware = require('../middleware/auth');
+const { getEffectiveSubscription } = require('./subscription');
+
+const PLAN_LIMITS = {
+  free:      5,
+  essentiel: 20,
+  premium:   null,
+};
+
+async function getMonthlyUsage(userId) {
+  const now = new Date();
+  const startOfMonth = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}-01`;
+  const row = await db.get(
+    `SELECT COUNT(*) as count FROM articles WHERE user_id = $1 AND created_at >= $2`,
+    [userId, startOfMonth]
+  );
+  return parseInt(row.count || 0, 10);
+}
 
 // ── Conversion KEPUB ──────────────────────────────────────────────
 function convertToKepub(epubPath) {
@@ -77,6 +94,29 @@ router.delete('/', authMiddleware, async (req, res) => {
   }
 });
 
+// GET /api/articles/quota
+router.get('/quota', authMiddleware, async (req, res) => {
+  try {
+    const sub   = await getEffectiveSubscription(req.userId);
+    const plan  = sub ? sub.plan : 'free';
+    const limit = plan in PLAN_LIMITS ? PLAN_LIMITS[plan] : PLAN_LIMITS.free;
+    const used  = await getMonthlyUsage(req.userId);
+
+    const now = new Date();
+    const resetDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1)).toISOString();
+
+    res.json({
+      plan,
+      limit,
+      used,
+      remaining: limit === null ? null : Math.max(0, limit - used),
+      resetDate,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // GET /api/articles/categories/list
 router.get('/categories/list', authMiddleware, async (req, res) => {
   try {
@@ -121,6 +161,24 @@ router.post('/', authMiddleware, async (req, res) => {
   if (!url) return res.status(400).json({ error: 'URL requise' });
   if (!VALID_FORMATS.includes(format)) {
     return res.status(400).json({ error: `Format invalide. Valeurs acceptées : ${VALID_FORMATS.join(', ')}` });
+  }
+
+  // Vérification du quota mensuel
+  try {
+    const sub   = await getEffectiveSubscription(req.userId);
+    const plan  = sub ? sub.plan : 'free';
+    const limit = PLAN_LIMITS[plan];
+    if (limit !== null) {
+      const used = await getMonthlyUsage(req.userId);
+      if (used >= limit) {
+        return res.status(429).json({
+          error: 'QUOTA_EXCEEDED',
+          quota: { plan, limit, used, remaining: 0 },
+        });
+      }
+    }
+  } catch (err) {
+    return res.status(500).json({ error: 'Erreur lors de la vérification du quota' });
   }
 
   const id = uuidv4();

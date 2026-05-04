@@ -278,7 +278,7 @@
     }
 
     /* ── Modal ── */
-    #kindle-modal {
+    #kindle-modal, #quota-modal {
       display: none;
       position: fixed;
       inset: 0;
@@ -290,7 +290,7 @@
       backdrop-filter: blur(2px);
     }
 
-    #kindle-modal.open { display: flex; }
+    #kindle-modal.open, #quota-modal.open { display: flex; }
 
     .modal-box {
       background: var(--white);
@@ -405,6 +405,18 @@
       <div class="modal-actions">
         <button class="modal-btn modal-btn-cancel" id="modal-cancel">Fermer</button>
         <button class="modal-btn modal-btn-primary" id="modal-go-profile">Aller au profil</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal quota dépassé -->
+  <div id="quota-modal">
+    <div class="modal-box" style="border-top-color: #8b2020;">
+      <h3>Quota mensuel atteint</h3>
+      <p id="quota-modal-text">Vous avez atteint votre limite d'articles pour ce mois.</p>
+      <div class="modal-actions">
+        <button class="modal-btn modal-btn-cancel" id="quota-modal-cancel">Fermer</button>
+        <button class="modal-btn modal-btn-primary" id="quota-modal-upgrade">Voir les offres</button>
       </div>
     </div>
   </div>

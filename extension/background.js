@@ -81,6 +81,8 @@ async function sendArticle({ url, html, format = 'epub3', title = null, category
   }
 
   if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    if (body && body.error) return body;
     throw new Error(`Erreur serveur : ${response.status}`);
   }
 
