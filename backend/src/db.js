@@ -22,40 +22,49 @@ if (process.env.DATABASE_URL) {
   });
 
   pool.query(`
-    CREATE TABLE IF NOT EXISTS users (
-      id            TEXT PRIMARY KEY,
-      email         TEXT UNIQUE NOT NULL,
-      password      TEXT NOT NULL,
-      name          TEXT,
-      kindle_email  TEXT,
-      plan          TEXT DEFAULT 'free',
-      billing       TEXT DEFAULT NULL,
-      subscribed_at TIMESTAMPTZ DEFAULT NULL,
-      trial_end     TIMESTAMPTZ DEFAULT NULL,
-      created_at    TIMESTAMPTZ DEFAULT NOW()
-    );
+  CREATE TABLE IF NOT EXISTS users (
+    id            TEXT PRIMARY KEY,
+    email         TEXT UNIQUE NOT NULL,
+    password      TEXT NOT NULL,
+    name          TEXT,
+    kindle_email  TEXT,
+    plan          TEXT DEFAULT 'free',
+    billing       TEXT DEFAULT NULL,
+    subscribed_at TIMESTAMPTZ DEFAULT NULL,
+    trial_end     TIMESTAMPTZ DEFAULT NULL,
+    created_at    TIMESTAMPTZ DEFAULT NOW()
+  );
 
-    CREATE TABLE IF NOT EXISTS articles (
-      id            TEXT PRIMARY KEY,
-      user_id       TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-      url           TEXT NOT NULL,
-      title         TEXT,
-      author        TEXT,
-      content_html  TEXT,
-      epub_path     TEXT,
-      status        TEXT DEFAULT 'pending',
-      kindle_sent   INTEGER DEFAULT 0,
-      created_at    TIMESTAMPTZ DEFAULT NOW(),
-      error_message TEXT,
-      category      TEXT DEFAULT NULL,
-      format        TEXT DEFAULT 'epub3'
-    );
+  CREATE TABLE IF NOT EXISTS articles (
+    id            TEXT PRIMARY KEY,
+    user_id       TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    url           TEXT NOT NULL,
+    title         TEXT,
+    author        TEXT,
+    content_html  TEXT,
+    epub_path     TEXT,
+    status        TEXT DEFAULT 'pending',
+    kindle_sent   INTEGER DEFAULT 0,
+    created_at    TIMESTAMPTZ DEFAULT NOW(),
+    error_message TEXT,
+    category      TEXT DEFAULT NULL,
+    format        TEXT DEFAULT 'epub3'
+  );
 
-    CREATE TABLE IF NOT EXISTS settings (
-      key   TEXT PRIMARY KEY,
-      value TEXT
-    );
-  `).catch(err => console.error('Erreur init tables PostgreSQL:', err));
+  CREATE TABLE IF NOT EXISTS settings (
+    key   TEXT PRIMARY KEY,
+    value TEXT
+  );
+`).then(() => {
+  // Migrations pour les tables existantes
+  const migrations = [
+    `ALTER TABLE users ADD COLUMN IF NOT EXISTS plan TEXT DEFAULT 'free'`,
+    `ALTER TABLE users ADD COLUMN IF NOT EXISTS billing TEXT DEFAULT NULL`,
+    `ALTER TABLE users ADD COLUMN IF NOT EXISTS subscribed_at TIMESTAMPTZ DEFAULT NULL`,
+    `ALTER TABLE users ADD COLUMN IF NOT EXISTS trial_end TIMESTAMPTZ DEFAULT NULL`,
+  ];
+  return Promise.all(migrations.map(sql => pool.query(sql)));
+}).catch(err => console.error('Erreur init DB PostgreSQL:', err));
 
   db = {
     run: async (sql, params = []) => {
