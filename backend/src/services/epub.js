@@ -15,7 +15,7 @@ async function generateEpub(article, articleId) {
   const options = {
     title: article.title,
     author: article.author,
-    publisher: article.siteName || 'KTool Clone',
+    publisher: article.siteName || 'Kolio',
     content: [
       {
         title: article.title,
