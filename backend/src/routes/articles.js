@@ -21,7 +21,7 @@ async function getMonthlyUsage(userId) {
   const now = new Date();
   const startOfMonth = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}-01`;
   const row = await db.get(
-    `SELECT COUNT(*) as count FROM articles WHERE user_id = $1 AND created_at >= $2`,
+    `SELECT COUNT(*) as count FROM article_quota_log WHERE user_id = $1 AND created_at >= $2`,
     [userId, startOfMonth]
   );
   return parseInt(row.count || 0, 10);
@@ -187,6 +187,10 @@ router.post('/', authMiddleware, async (req, res) => {
     await db.run(
       `INSERT INTO articles (id, user_id, url, status, format, title, category) VALUES ($1, $2, $3, 'processing', $4, $5, $6)`,
       [id, req.userId, url, format, customTitle || null, category || null]
+    );
+    await db.run(
+      `INSERT INTO article_quota_log (id, user_id) VALUES ($1, $2)`,
+      [id, req.userId]
     );
   } catch (err) {
     return res.status(500).json({ error: 'Erreur lors de la création' });

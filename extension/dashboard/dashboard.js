@@ -681,6 +681,7 @@ function setupSubscriptionActions(currentSub) {
         chrome.storage.local.set({ subscription: newSub });
         renderSubscriptionUI(newSub);
         setupSubscriptionActions(newSub);
+        refreshQuota();
       } catch (err) {
         alert(`❌ Erreur : ${err.message}`);
       }
@@ -702,10 +703,18 @@ function setupSubscriptionActions(currentSub) {
       chrome.storage.local.set({ subscription: newSub });
       renderSubscriptionUI(newSub);
       setupSubscriptionActions(newSub);
+      refreshQuota();
     } catch (err) {
       alert(`❌ Erreur : ${err.message}`);
     }
   });
+}
+
+async function refreshQuota() {
+  try {
+    const res = await apiFetch('/articles/quota');
+    if (res.ok) renderQuotaBar(await res.json());
+  } catch { /* silencieux */ }
 }
 
 function statusLabel(status) {

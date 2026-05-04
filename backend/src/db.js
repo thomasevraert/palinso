@@ -55,6 +55,12 @@ if (process.env.DATABASE_URL) {
     key   TEXT PRIMARY KEY,
     value TEXT
   );
+
+  CREATE TABLE IF NOT EXISTS article_quota_log (
+    id         TEXT PRIMARY KEY,
+    user_id    TEXT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+  );
 `).then(() => {
   // Migrations pour les tables existantes
   const migrations = [
@@ -121,6 +127,12 @@ if (process.env.DATABASE_URL) {
     CREATE TABLE IF NOT EXISTS settings (
       key   TEXT PRIMARY KEY,
       value TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS article_quota_log (
+      id         TEXT PRIMARY KEY,
+      user_id    TEXT NOT NULL,
+      created_at TEXT DEFAULT (datetime('now'))
     );
   `);
 
