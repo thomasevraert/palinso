@@ -3,4 +3,4 @@ node_modules/
 data.sqlite
 epubs/
 *.db
-.DS_Store
+.DS_Storenode_modules/
