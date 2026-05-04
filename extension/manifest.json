@@ -7,7 +7,7 @@
   "permissions": ["activeTab", "storage", "scripting", "tabs"],
 
   "host_permissions": [
-    "https://TON-PROJET.up.railway.app/*",
+    "https://kolio-production.up.railway.app/*",
     "http://localhost:3000/*",
     "<all_urls>"
   ],
