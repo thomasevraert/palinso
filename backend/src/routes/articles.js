@@ -94,6 +94,23 @@ router.delete('/', authMiddleware, async (req, res) => {
   }
 });
 
+// POST /api/articles/extract — extraction du contenu sans création en base
+router.post('/extract', authMiddleware, async (req, res) => {
+  const { url, html } = req.body;
+  if (!url) return res.status(400).json({ error: 'URL requise' });
+  try {
+    const article = html ? extractFromHtml(html, url) : await extractFromUrl(url);
+    res.json({
+      title:        article.title,
+      author:       article.author,
+      siteName:     article.siteName,
+      content_html: article.content,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // GET /api/articles/quota
 router.get('/quota', authMiddleware, async (req, res) => {
   try {
@@ -155,7 +172,7 @@ router.get('/', authMiddleware, async (req, res) => {
 
 // POST /api/articles
 router.post('/', authMiddleware, async (req, res) => {
-  const { url, html, format = 'epub3', title: customTitle, category, kindleEmail } = req.body;
+  const { url, html, format = 'epub3', title: customTitle, category, kindleEmail, images = true } = req.body;
 
   const VALID_FORMATS = ['epub3', 'kepub'];
   if (!url) return res.status(400).json({ error: 'URL requise' });
@@ -201,11 +218,19 @@ router.post('/', authMiddleware, async (req, res) => {
   try {
     const article    = html ? extractFromHtml(html, url) : await extractFromUrl(url);
     const finalTitle = customTitle || article.title;
-    const epubPath   = await generateEpub({ ...article, title: finalTitle }, id);
+
+    let content = article.content;
+    if (images === false) {
+      content = content
+        .replace(/<img[^>]*\/?>/gi, '')
+        .replace(/<figure[^>]*>[\s\S]*?<\/figure>/gi, '');
+    }
+
+    const epubPath = await generateEpub({ ...article, content, title: finalTitle }, id);
 
     await db.run(
       `UPDATE articles SET title = $1, author = $2, content_html = $3, epub_path = $4, status = 'done' WHERE id = $5`,
-      [finalTitle, article.author, article.content, epubPath, id]
+      [finalTitle, article.author, content, epubPath, id]
     );
 
     console.log(`✅ Article traité [${format}] : ${finalTitle}`);

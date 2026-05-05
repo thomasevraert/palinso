@@ -187,80 +187,56 @@ async function buildPayload(tab, pageData) {
   };
 }
 
-// ── Bouton : Convertir ────────────────────────────────────────────
-btnSend.addEventListener('click', async function() {
-  btnSend.disabled = true;
-  showStatus('Extraction de la page en cours...', 'info');
+// ── Ouverture du dashboard en mode génération ─────────────────────
+async function openGenerationView(kindleMode) {
+  const dashboardUrl = chrome.runtime.getURL('dashboard/dashboard.html');
 
   try {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     let pageData = null;
     try { pageData = await chrome.tabs.sendMessage(tab.id, { type: 'GET_PAGE_HTML' }); } catch (e) {}
 
-    showStatus('Génération du fichier ' + selectedFormat.toUpperCase() + '...', 'info');
+    const payload = {
+      url:        tab.url,
+      html:       pageData ? pageData.html : null,
+      format:     selectedFormat,
+      title:      customTitleInput.value.trim() || tab.title || '',
+      category:   customCategoryInput.value.trim() || null,
+      kindleMode: kindleMode,
+    };
 
-    const result = await chrome.runtime.sendMessage({
-      type: 'SEND_ARTICLE',
-      payload: await buildPayload(tab, pageData),
-    });
+    await chrome.storage.local.set({ generationPayload: payload });
 
-    if (result.error === 'SESSION_EXPIRED') {
-      chrome.storage.local.remove(['token', 'name', 'email', 'kindleEmail', 'subscription'], () => {
-        chrome.tabs.create({ url: chrome.runtime.getURL('auth/auth.html') });
-        window.close();
-      });
-      return;
+    const existingTabs = await chrome.tabs.query({ url: dashboardUrl });
+    if (existingTabs.length > 0) {
+      await chrome.tabs.update(existingTabs[0].id, { active: true });
+      await chrome.windows.update(existingTabs[0].windowId, { focused: true });
+      chrome.tabs.sendMessage(existingTabs[0].id, { type: 'OPEN_GENERATION' });
+    } else {
+      chrome.tabs.create({ url: dashboardUrl + '#generation' });
     }
-
-    if (result.error === 'QUOTA_EXCEEDED') { showQuotaModal(result.quota); }
-    else if (result.error) showStatus('❌ Erreur : ' + result.error, 'error');
-    else showStatus('✅ En cours de traitement en ' + selectedFormat.toUpperCase() + ' ! Vérifie le dashboard.', 'success');
-
+    window.close();
   } catch (err) {
     showStatus('❌ ' + err.message, 'error');
   }
+}
 
+// ── Bouton : Convertir ────────────────────────────────────────────
+btnSend.addEventListener('click', async function() {
+  btnSend.disabled = true;
+  showStatus('Préparation de l\'aperçu...', 'info');
+  await openGenerationView(false);
   btnSend.disabled = false;
 });
 
 // ── Bouton : Envoyer vers Kindle ──────────────────────────────────
 btnKindle.addEventListener('click', async function() {
   const kindleEmail = await getKindleEmailFromProfile();
-
-  if (!kindleEmail) {
-    kindleModal.classList.add('open');
-    return;
-  }
+  if (!kindleEmail) { kindleModal.classList.add('open'); return; }
 
   btnKindle.disabled = true;
-  showStatus('Extraction et envoi vers Kindle en cours...', 'info');
-
-  try {
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    let pageData = null;
-    try { pageData = await chrome.tabs.sendMessage(tab.id, { type: 'GET_PAGE_HTML' }); } catch (e) {}
-
-    const payload = await buildPayload(tab, pageData);
-    payload.kindleEmail = kindleEmail;
-
-    const result = await chrome.runtime.sendMessage({ type: 'SEND_ARTICLE', payload });
-
-    if (result.error === 'SESSION_EXPIRED') {
-      chrome.storage.local.remove(['token', 'name', 'email', 'kindleEmail', 'subscription'], () => {
-        chrome.tabs.create({ url: chrome.runtime.getURL('auth/auth.html') });
-        window.close();
-      });
-      return;
-    }
-
-    if (result.error === 'QUOTA_EXCEEDED') { showQuotaModal(result.quota); }
-    else if (result.error) showStatus('❌ Erreur : ' + result.error, 'error');
-    else showStatus("✅ En cours d'envoi vers votre Kindle ! Vérifiez dans quelques minutes.", 'success');
-
-  } catch (err) {
-    showStatus('❌ ' + err.message, 'error');
-  }
-
+  showStatus('Préparation de l\'aperçu...', 'info');
+  await openGenerationView(true);
   btnKindle.disabled = false;
 });
 

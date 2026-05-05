@@ -46,6 +46,7 @@ chrome.runtime.onMessage.addListener((message) => {
   if (message.type === 'REFRESH_ARTICLES')  loadArticles();
   if (message.type === 'OPEN_PROFILE')      switchTab('profile');
   if (message.type === 'OPEN_SUBSCRIPTION') switchTab('subscription');
+  if (message.type === 'OPEN_GENERATION')   switchTab('generation');
 });
 
 // ── Navigation ────────────────────────────────────────────────────
@@ -56,9 +57,11 @@ function switchTab(tabName) {
   document.getElementById('view-articles').classList.toggle('active',     tabName === 'articles');
   document.getElementById('view-profile').classList.toggle('active',      tabName === 'profile');
   document.getElementById('view-subscription').classList.toggle('active', tabName === 'subscription');
+  document.getElementById('view-generation').classList.toggle('active',   tabName === 'generation');
 
   if (tabName === 'profile')      loadProfile();
   if (tabName === 'subscription') loadSubscription();
+  if (tabName === 'generation')   loadGeneration();
 }
 
 document.querySelectorAll('.nav-item').forEach(item => {
@@ -69,6 +72,7 @@ document.getElementById('dashboard-user').addEventListener('click', () => switch
 
 if (window.location.hash === '#profile')      switchTab('profile');
 if (window.location.hash === '#subscription') switchTab('subscription');
+if (window.location.hash === '#generation')   switchTab('generation');
 
 // ── Init ──────────────────────────────────────────────────────────
 loadArticles();
@@ -716,6 +720,237 @@ async function refreshQuota() {
     if (res.ok) renderQuotaBar(await res.json());
   } catch { /* silencieux */ }
 }
+
+// ── Vue Génération ────────────────────────────────────────────────
+let genPayload    = null;  // payload courant (url, html, format, kindleMode…)
+let genExtracted  = null;  // résultat de l'extraction (title, author, siteName, content_html)
+let genFormat     = 'epub3';
+
+async function loadGeneration() {
+  // Réinitialise l'état
+  document.getElementById('gen-loading').style.display = 'block';
+  document.getElementById('gen-error').style.display   = 'none';
+  document.getElementById('gen-content').style.display = 'none';
+
+  // Lit le payload stocké par le popup
+  const { generationPayload } = await chrome.storage.local.get('generationPayload');
+  if (!generationPayload) { switchTab('articles'); return; }
+
+  genPayload = generationPayload;
+  chrome.storage.local.remove('generationPayload');
+
+  // Pré-remplit les champs avec les valeurs du popup
+  genFormat = genPayload.format || 'epub3';
+  document.querySelectorAll('.gen-pill').forEach(p => {
+    p.classList.toggle('active', p.dataset.format === genFormat);
+  });
+  updateGenSubmitLabel();
+
+  // Kindle : affiche le bouton Kindle uniquement si mode kindle
+  const kindleBtn = document.getElementById('gen-submit-kindle');
+  kindleBtn.style.display = genPayload.kindleMode ? 'block' : 'none';
+
+  // Extraction + quota en parallèle
+  try {
+    const [extractRes, quotaRes] = await Promise.all([
+      apiFetch('/articles/extract', {
+        method: 'POST',
+        body: JSON.stringify({ url: genPayload.url, html: genPayload.html }),
+      }),
+      apiFetch('/articles/quota'),
+    ]);
+
+    if (!extractRes.ok) {
+      const err = await extractRes.json().catch(() => ({ error: 'Erreur inconnue' }));
+      showGenError(err.error || 'Impossible d\'extraire le contenu.');
+      return;
+    }
+
+    genExtracted = await extractRes.json();
+
+    // Pré-remplit le titre (priorité : titre saisi dans le popup)
+    document.getElementById('gen-title').value    = genPayload.title || genExtracted.title || '';
+    document.getElementById('gen-category').value = genPayload.category || '';
+
+    // Charge les suggestions de catégories
+    loadCategorySuggestions();
+
+    // Affiche le quota
+    if (quotaRes.ok) renderGenQuota(await quotaRes.json());
+
+    // Affiche la prévisualisation
+    renderGenPreview();
+
+    document.getElementById('gen-loading').style.display = 'none';
+    document.getElementById('gen-content').style.display = 'grid';
+
+  } catch (err) {
+    showGenError(err.message);
+  }
+}
+
+function showGenError(msg) {
+  document.getElementById('gen-loading').style.display    = 'none';
+  document.getElementById('gen-error').style.display      = 'block';
+  document.getElementById('gen-error-text').textContent   = msg;
+}
+
+function renderGenPreview() {
+  if (!genExtracted) return;
+  document.getElementById('gen-preview-title').textContent  = document.getElementById('gen-title').value || genExtracted.title;
+  document.getElementById('gen-preview-site').textContent   = genExtracted.siteName || new URL(genPayload.url).hostname;
+  document.getElementById('gen-preview-author').textContent = genExtracted.author || '';
+  document.getElementById('gen-preview-body').innerHTML     = genExtracted.content_html || '';
+}
+
+function renderGenQuota(quota) {
+  const box      = document.getElementById('gen-quota');
+  const textEl   = document.getElementById('gen-quota-text');
+  const planEl   = document.getElementById('gen-quota-plan');
+  const fill     = document.getElementById('gen-quota-fill');
+  const alertEl  = document.getElementById('gen-quota-alert');
+  const submitEl = document.getElementById('gen-submit-epub');
+  const kindleEl = document.getElementById('gen-submit-kindle');
+
+  if (quota.limit === null) { box.style.display = 'none'; return; }
+
+  box.style.display   = 'block';
+  textEl.textContent  = `${quota.used} / ${quota.limit} ce mois`;
+  planEl.textContent  = PLAN_LABELS[quota.plan] || quota.plan;
+
+  const pct = Math.min(100, Math.round((quota.used / quota.limit) * 100));
+  fill.style.width = `${pct}%`;
+  fill.className   = 'gen-quota-fill' + (pct >= 100 ? ' danger' : pct >= 80 ? ' warning' : '');
+
+  if (quota.remaining === 0) {
+    alertEl.style.display = 'block';
+    alertEl.textContent   = 'Quota atteint — passez à l\'offre supérieure.';
+    submitEl.disabled     = true;
+    kindleEl.disabled     = true;
+  } else {
+    alertEl.style.display = 'none';
+    submitEl.disabled     = false;
+    kindleEl.disabled     = false;
+  }
+}
+
+function updateGenSubmitLabel() {
+  const btn = document.getElementById('gen-submit-epub');
+  if (btn) btn.textContent = `Générer en ${genFormat.toUpperCase()}`;
+}
+
+async function loadCategorySuggestions() {
+  try {
+    const res  = await apiFetch('/articles/categories/list');
+    if (!res.ok) return;
+    const cats = await res.json();
+    document.getElementById('gen-category-list').innerHTML =
+      cats.map(c => `<option value="${c}">`).join('');
+  } catch { /* silencieux */ }
+}
+
+async function submitGeneration(kindleMode) {
+  if (!genExtracted || !genPayload) return;
+
+  const submitEpub   = document.getElementById('gen-submit-epub');
+  const submitKindle = document.getElementById('gen-submit-kindle');
+  const progress     = document.getElementById('gen-progress');
+
+  submitEpub.disabled   = true;
+  submitKindle.disabled = true;
+  progress.style.display = 'block';
+
+  const title    = document.getElementById('gen-title').value.trim() || genExtracted.title;
+  const category = document.getElementById('gen-category').value.trim() || null;
+  const images   = document.getElementById('gen-images').checked;
+
+  let kindleEmail = null;
+  if (kindleMode) {
+    const stored = await new Promise(r => chrome.storage.local.get('kindleEmail', r));
+    kindleEmail  = stored.kindleEmail || null;
+    if (!kindleEmail) {
+      document.getElementById('kindle-missing-modal').classList.add('open');
+      submitEpub.disabled    = false;
+      submitKindle.disabled  = false;
+      progress.style.display = 'none';
+      return;
+    }
+  }
+
+  try {
+    const response = await apiFetch('/articles', {
+      method: 'POST',
+      body: JSON.stringify({
+        url:         genPayload.url,
+        html:        genPayload.html,
+        format:      genFormat,
+        title,
+        category,
+        images,
+        kindleEmail,
+      }),
+    });
+
+    if (response.status === 401 || response.status === 403) {
+      chrome.storage.local.remove(['token', 'name', 'email', 'kindleEmail', 'subscription'], () => {
+        window.location.href = chrome.runtime.getURL('auth/auth.html');
+      });
+      return;
+    }
+
+    const result = await response.json();
+
+    if (result.error === 'QUOTA_EXCEEDED') {
+      renderGenQuota(result.quota);
+      progress.style.display = 'none';
+      return;
+    }
+
+    if (result.error) {
+      alert(`❌ ${result.error}`);
+      submitEpub.disabled    = false;
+      submitKindle.disabled  = false;
+      progress.style.display = 'none';
+      return;
+    }
+
+    // Succès → retour aux articles (le polling prendra le relais)
+    genPayload   = null;
+    genExtracted = null;
+    switchTab('articles');
+    loadArticles();
+
+  } catch (err) {
+    alert(`❌ Erreur réseau : ${err.message}`);
+    submitEpub.disabled    = false;
+    submitKindle.disabled  = false;
+    progress.style.display = 'none';
+  }
+}
+
+// ── Listeners de la vue génération ───────────────────────────────
+document.getElementById('gen-back-btn').addEventListener('click', () => switchTab('articles'));
+document.getElementById('gen-retry-btn').addEventListener('click', () => switchTab('articles'));
+
+document.querySelectorAll('.gen-pill').forEach(pill => {
+  pill.addEventListener('click', () => {
+    document.querySelectorAll('.gen-pill').forEach(p => p.classList.remove('active'));
+    pill.classList.add('active');
+    genFormat = pill.dataset.format;
+    updateGenSubmitLabel();
+  });
+});
+
+document.getElementById('gen-images').addEventListener('change', function() {
+  document.getElementById('gen-preview-body').classList.toggle('no-images', !this.checked);
+});
+
+document.getElementById('gen-title').addEventListener('input', function() {
+  document.getElementById('gen-preview-title').textContent = this.value || (genExtracted ? genExtracted.title : '');
+});
+
+document.getElementById('gen-submit-epub').addEventListener('click',   () => submitGeneration(false));
+document.getElementById('gen-submit-kindle').addEventListener('click',  () => submitGeneration(true));
 
 function statusLabel(status) {
   return { done: '✅ Prêt', processing: '⏳ En cours', error: '❌ Erreur', pending: '⏸ En attente' }[status] || status;
