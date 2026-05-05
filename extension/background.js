@@ -67,7 +67,58 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
 
+  if (message.type === 'CAPTURE_HTML') {
+    captureHtmlFromUrl(message.url)
+      .then(sendResponse)
+      .catch(err => sendResponse({ error: err.message }));
+    return true;
+  }
+
 });
+
+// ── Capture HTML depuis un onglet navigateur ──────────────────────
+// Ouvre l'URL en arrière-plan, attend le chargement complet, puis
+// envoie GET_PAGE_HTML au content script (Readability auto-injecté).
+function captureHtmlFromUrl(url) {
+  return new Promise((resolve, reject) => {
+    let tabId   = null;
+    let settled = false;
+    let timeoutId;
+
+    function settle(value) {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeoutId);
+      chrome.tabs.onUpdated.removeListener(onUpdated);
+      if (tabId !== null) chrome.tabs.remove(tabId).catch(() => {});
+      if (value instanceof Error) reject(value);
+      else resolve(value);
+    }
+
+    function onUpdated(updatedTabId, changeInfo) {
+      if (updatedTabId !== tabId || changeInfo.status !== 'complete') return;
+      chrome.tabs.sendMessage(tabId, { type: 'GET_PAGE_HTML' }, (result) => {
+        if (chrome.runtime.lastError || !result) {
+          settle({ html: null });
+          return;
+        }
+        settle({ html: result.html, title: result.title });
+      });
+    }
+
+    chrome.tabs.onUpdated.addListener(onUpdated);
+
+    chrome.tabs.create({ url, active: false }, (tab) => {
+      if (chrome.runtime.lastError) {
+        chrome.tabs.onUpdated.removeListener(onUpdated);
+        reject(new Error(chrome.runtime.lastError.message));
+        return;
+      }
+      tabId     = tab.id;
+      timeoutId = setTimeout(() => settle(new Error("Délai d'attente dépassé (30s).")), 30000);
+    });
+  });
+}
 
 // ── Envoi article ─────────────────────────────────────────────────
 async function sendArticle({ url, html, format = 'epub3', title = null, category = null, kindleEmail = null }) {

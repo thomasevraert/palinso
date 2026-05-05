@@ -765,6 +765,7 @@ async function startExtraction() {
   document.getElementById('gen-error').style.display     = 'none';
   document.getElementById('gen-content').style.display   = 'none';
   document.getElementById('gen-back-btn').textContent    = '← Retour';
+  document.getElementById('gen-loading-text').textContent = 'Extraction du contenu en cours…';
 
   genFormat = genPayload.format || 'epub3';
   document.querySelectorAll('.gen-pill').forEach(p => {
@@ -962,10 +963,30 @@ document.getElementById('gen-retry-btn').addEventListener('click', () => {
   if (genPayload) document.getElementById('gen-url-input').value = genPayload.url || '';
 });
 
-document.getElementById('gen-preview-btn').addEventListener('click', () => {
+document.getElementById('gen-preview-btn').addEventListener('click', async () => {
   const url = document.getElementById('gen-url-input').value.trim();
   if (!url) return;
-  genPayload = { url, html: null, format: genFormat, title: '', category: null, kindleMode: false };
+
+  // Show loading immediately — capture can take several seconds
+  genState = 'loading';
+  document.getElementById('gen-url-form').style.display  = 'none';
+  document.getElementById('gen-loading').style.display   = 'block';
+  document.getElementById('gen-error').style.display     = 'none';
+  document.getElementById('gen-content').style.display   = 'none';
+  document.getElementById('gen-back-btn').textContent    = '← Retour';
+  document.getElementById('gen-loading-text').textContent = 'Chargement de la page…';
+
+  // Capture the rendered HTML via a background tab — same path as the extension
+  // button, avoids server-side 403/429 blocks on news sites like Le Monde
+  let html = null;
+  try {
+    const captured = await new Promise(resolve => {
+      chrome.runtime.sendMessage({ type: 'CAPTURE_HTML', url }, resolve);
+    });
+    if (captured && !captured.error && captured.html) html = captured.html;
+  } catch { /* fallback: server-side extraction */ }
+
+  genPayload = { url, html, format: genFormat, title: '', category: null, kindleMode: false };
   startExtraction();
 });
 
