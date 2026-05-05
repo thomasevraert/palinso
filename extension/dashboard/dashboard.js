@@ -722,35 +722,59 @@ async function refreshQuota() {
 }
 
 // ── Vue Génération ────────────────────────────────────────────────
-let genPayload    = null;  // payload courant (url, html, format, kindleMode…)
-let genExtracted  = null;  // résultat de l'extraction (title, author, siteName, content_html)
-let genFormat     = 'epub3';
+let genPayload   = null;
+let genExtracted = null;
+let genFormat    = 'epub3';
+let genState     = null; // 'url-input' | 'loading' | 'preview' | 'error'
+
+// Réagit immédiatement quand le popup écrit le payload en storage
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area === 'local' && changes.generationPayload && changes.generationPayload.newValue) {
+    switchTab('generation');
+  }
+});
 
 async function loadGeneration() {
-  // Réinitialise l'état
-  document.getElementById('gen-loading').style.display = 'block';
-  document.getElementById('gen-error').style.display   = 'none';
-  document.getElementById('gen-content').style.display = 'none';
-
-  // Lit le payload stocké par le popup
   const { generationPayload } = await chrome.storage.local.get('generationPayload');
-  if (!generationPayload) { switchTab('articles'); return; }
 
-  genPayload = generationPayload;
-  chrome.storage.local.remove('generationPayload');
+  if (generationPayload) {
+    // Payload du popup → extraction immédiate
+    genPayload = generationPayload;
+    chrome.storage.local.remove('generationPayload');
+    startExtraction();
+  } else if (genState !== 'preview' && genState !== 'loading') {
+    // Arrivée manuelle via le nav → formulaire URL
+    showGenUrlForm();
+  }
+  // Si genState === 'preview' ou 'loading', on ne réinitialise pas
+}
 
-  // Pré-remplit les champs avec les valeurs du popup
+function showGenUrlForm() {
+  genState = 'url-input';
+  document.getElementById('gen-url-form').style.display  = 'block';
+  document.getElementById('gen-loading').style.display   = 'none';
+  document.getElementById('gen-error').style.display     = 'none';
+  document.getElementById('gen-content').style.display   = 'none';
+  document.getElementById('gen-back-btn').textContent    = '← Mes articles';
+}
+
+async function startExtraction() {
+  genState = 'loading';
+  document.getElementById('gen-url-form').style.display  = 'none';
+  document.getElementById('gen-loading').style.display   = 'block';
+  document.getElementById('gen-error').style.display     = 'none';
+  document.getElementById('gen-content').style.display   = 'none';
+  document.getElementById('gen-back-btn').textContent    = '← Retour';
+
   genFormat = genPayload.format || 'epub3';
   document.querySelectorAll('.gen-pill').forEach(p => {
     p.classList.toggle('active', p.dataset.format === genFormat);
   });
   updateGenSubmitLabel();
 
-  // Kindle : affiche le bouton Kindle uniquement si mode kindle
   const kindleBtn = document.getElementById('gen-submit-kindle');
   kindleBtn.style.display = genPayload.kindleMode ? 'block' : 'none';
 
-  // Extraction + quota en parallèle
   try {
     const [extractRes, quotaRes] = await Promise.all([
       apiFetch('/articles/extract', {
@@ -768,19 +792,15 @@ async function loadGeneration() {
 
     genExtracted = await extractRes.json();
 
-    // Pré-remplit le titre (priorité : titre saisi dans le popup)
     document.getElementById('gen-title').value    = genPayload.title || genExtracted.title || '';
     document.getElementById('gen-category').value = genPayload.category || '';
 
-    // Charge les suggestions de catégories
     loadCategorySuggestions();
-
-    // Affiche le quota
     if (quotaRes.ok) renderGenQuota(await quotaRes.json());
 
-    // Affiche la prévisualisation
     renderGenPreview();
 
+    genState = 'preview';
     document.getElementById('gen-loading').style.display = 'none';
     document.getElementById('gen-content').style.display = 'grid';
 
@@ -790,15 +810,16 @@ async function loadGeneration() {
 }
 
 function showGenError(msg) {
-  document.getElementById('gen-loading').style.display    = 'none';
-  document.getElementById('gen-error').style.display      = 'block';
-  document.getElementById('gen-error-text').textContent   = msg;
+  genState = 'error';
+  document.getElementById('gen-loading').style.display  = 'none';
+  document.getElementById('gen-error').style.display    = 'block';
+  document.getElementById('gen-error-text').textContent = msg;
 }
 
 function renderGenPreview() {
   if (!genExtracted) return;
   document.getElementById('gen-preview-title').textContent  = document.getElementById('gen-title').value || genExtracted.title;
-  document.getElementById('gen-preview-site').textContent   = genExtracted.siteName || new URL(genPayload.url).hostname;
+  document.getElementById('gen-preview-site').textContent   = genExtracted.siteName || (() => { try { return new URL(genPayload.url).hostname; } catch { return ''; } })();
   document.getElementById('gen-preview-author').textContent = genExtracted.author || '';
   document.getElementById('gen-preview-body').innerHTML     = genExtracted.content_html || '';
 }
@@ -814,9 +835,9 @@ function renderGenQuota(quota) {
 
   if (quota.limit === null) { box.style.display = 'none'; return; }
 
-  box.style.display   = 'block';
-  textEl.textContent  = `${quota.used} / ${quota.limit} ce mois`;
-  planEl.textContent  = PLAN_LABELS[quota.plan] || quota.plan;
+  box.style.display  = 'block';
+  textEl.textContent = `${quota.used} / ${quota.limit} ce mois`;
+  planEl.textContent = PLAN_LABELS[quota.plan] || quota.plan;
 
   const pct = Math.min(100, Math.round((quota.used / quota.limit) * 100));
   fill.style.width = `${pct}%`;
@@ -856,8 +877,8 @@ async function submitGeneration(kindleMode) {
   const submitKindle = document.getElementById('gen-submit-kindle');
   const progress     = document.getElementById('gen-progress');
 
-  submitEpub.disabled   = true;
-  submitKindle.disabled = true;
+  submitEpub.disabled    = true;
+  submitKindle.disabled  = true;
   progress.style.display = 'block';
 
   const title    = document.getElementById('gen-title').value.trim() || genExtracted.title;
@@ -880,15 +901,7 @@ async function submitGeneration(kindleMode) {
   try {
     const response = await apiFetch('/articles', {
       method: 'POST',
-      body: JSON.stringify({
-        url:         genPayload.url,
-        html:        genPayload.html,
-        format:      genFormat,
-        title,
-        category,
-        images,
-        kindleEmail,
-      }),
+      body: JSON.stringify({ url: genPayload.url, html: genPayload.html, format: genFormat, title, category, images, kindleEmail }),
     });
 
     if (response.status === 401 || response.status === 403) {
@@ -914,9 +927,10 @@ async function submitGeneration(kindleMode) {
       return;
     }
 
-    // Succès → retour aux articles (le polling prendra le relais)
+    // Succès → retour à la liste
     genPayload   = null;
     genExtracted = null;
+    genState     = null;
     switchTab('articles');
     loadArticles();
 
@@ -929,8 +943,35 @@ async function submitGeneration(kindleMode) {
 }
 
 // ── Listeners de la vue génération ───────────────────────────────
-document.getElementById('gen-back-btn').addEventListener('click', () => switchTab('articles'));
-document.getElementById('gen-retry-btn').addEventListener('click', () => switchTab('articles'));
+document.getElementById('gen-back-btn').addEventListener('click', () => {
+  if (genState === 'preview' || genState === 'error') {
+    genState     = null;
+    genExtracted = null;
+    showGenUrlForm();
+    if (genPayload) document.getElementById('gen-url-input').value = genPayload.url || '';
+  } else {
+    genState = null;
+    switchTab('articles');
+  }
+});
+
+document.getElementById('gen-retry-btn').addEventListener('click', () => {
+  genState     = null;
+  genExtracted = null;
+  showGenUrlForm();
+  if (genPayload) document.getElementById('gen-url-input').value = genPayload.url || '';
+});
+
+document.getElementById('gen-preview-btn').addEventListener('click', () => {
+  const url = document.getElementById('gen-url-input').value.trim();
+  if (!url) return;
+  genPayload = { url, html: null, format: genFormat, title: '', category: null, kindleMode: false };
+  startExtraction();
+});
+
+document.getElementById('gen-url-input').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') document.getElementById('gen-preview-btn').click();
+});
 
 document.querySelectorAll('.gen-pill').forEach(pill => {
   pill.addEventListener('click', () => {
@@ -949,8 +990,8 @@ document.getElementById('gen-title').addEventListener('input', function() {
   document.getElementById('gen-preview-title').textContent = this.value || (genExtracted ? genExtracted.title : '');
 });
 
-document.getElementById('gen-submit-epub').addEventListener('click',   () => submitGeneration(false));
-document.getElementById('gen-submit-kindle').addEventListener('click',  () => submitGeneration(true));
+document.getElementById('gen-submit-epub').addEventListener('click',  () => submitGeneration(false));
+document.getElementById('gen-submit-kindle').addEventListener('click', () => submitGeneration(true));
 
 function statusLabel(status) {
   return { done: '✅ Prêt', processing: '⏳ En cours', error: '❌ Erreur', pending: '⏸ En attente' }[status] || status;

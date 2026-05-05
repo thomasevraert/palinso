@@ -107,7 +107,16 @@ router.post('/extract', authMiddleware, async (req, res) => {
       content_html: article.content,
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    let message = err.message;
+    if (err.response) {
+      const s = err.response.status;
+      if (s === 429) message = 'Ce site bloque les accès automatiques (limite de taux). Essayez depuis la page de l\'article directement dans votre navigateur.';
+      else if (s === 403) message = 'Ce site interdit l\'accès externe (403). Essayez depuis la page de l\'article.';
+      else if (s === 404) message = 'Page introuvable (404). Vérifiez que l\'URL est correcte.';
+      else if (s >= 500)  message = `Le site a retourné une erreur serveur (${s}). Réessayez plus tard.`;
+      else                message = `Le site a retourné une erreur ${s}.`;
+    }
+    res.status(500).json({ error: message });
   }
 });
 

@@ -205,14 +205,19 @@ async function openGenerationView(kindleMode) {
       kindleMode: kindleMode,
     };
 
+    // Écriture en storage d'abord — le dashboard y réagit via storage.onChanged
     await chrome.storage.local.set({ generationPayload: payload });
 
-    const existingTabs = await chrome.tabs.query({ url: dashboardUrl });
-    if (existingTabs.length > 0) {
-      await chrome.tabs.update(existingTabs[0].id, { active: true });
-      await chrome.windows.update(existingTabs[0].windowId, { focused: true });
-      chrome.tabs.sendMessage(existingTabs[0].id, { type: 'OPEN_GENERATION' });
+    // Cherche un onglet dashboard déjà ouvert (URL exacte ou avec hash)
+    const allTabs    = await chrome.tabs.query({});
+    const existing   = allTabs.find(t => t.url && t.url.startsWith(dashboardUrl));
+
+    if (existing) {
+      // storage.onChanged déclenchera automatiquement la vue génération
+      chrome.tabs.update(existing.id, { active: true });
+      chrome.windows.update(existing.windowId, { focused: true });
     } else {
+      // Nouvel onglet — le hash #generation déclenche loadGeneration()
       chrome.tabs.create({ url: dashboardUrl + '#generation' });
     }
     window.close();
