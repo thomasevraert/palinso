@@ -1,0 +1,47 @@
+# =========================================================================
+# Fichier .claudecodeignore optimisé pour Extension Web + Dashboard + DB
+# Placez ce fichier à la racine de votre projet pour économiser vos tokens.
+# =========================================================================
+
+# --- Dépendances (Le plus gros gouffre à tokens) ---
+node_modules/
+
+# --- Bases de données locales et fichiers de données ---
+*.db
+*.sqlite
+*.sqlite3
+*.sql
+*.local.db
+# Exclure les sauvegardes de données ou gros JSON de test
+data/*.json
+mocks/*.json
+.supabase/
+postgres-data/
+epubs/
+
+# --- Logs, Cache et Fichiers Temporaires ---
+*.log
+logs/
+*.tmp
+*.temp
+.npm/
+.eslintcache
+.prettiercache
+
+# --- Éditeurs de code, IDE et Système ---
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+.DS_Store
+.DS_Store?
+Thumbs.db
+ehthumbs.db
+
+# --- Gestion de version (Souvent ignoré par défaut, mais plus sûr ici) ---
+.git/
+.github/
+.gitlab/
