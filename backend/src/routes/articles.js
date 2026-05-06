@@ -217,6 +217,10 @@ router.post('/', authMiddleware, async (req, res) => {
       `INSERT INTO article_quota_log (id, user_id) VALUES ($1, $2)`,
       [id, req.userId]
     );
+    await db.run(
+      `UPDATE users SET articles_generated = articles_generated + 1 WHERE id = $1`,
+      [req.userId]
+    );
   } catch (err) {
     return res.status(500).json({ error: 'Erreur lors de la création' });
   }

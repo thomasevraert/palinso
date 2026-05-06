@@ -31,8 +31,9 @@ if (process.env.DATABASE_URL) {
     plan          TEXT DEFAULT 'free',
     billing       TEXT DEFAULT NULL,
     subscribed_at TIMESTAMPTZ DEFAULT NULL,
-    trial_end     TIMESTAMPTZ DEFAULT NULL,
-    created_at    TIMESTAMPTZ DEFAULT NOW()
+    trial_end          TIMESTAMPTZ DEFAULT NULL,
+    created_at         TIMESTAMPTZ DEFAULT NOW(),
+    articles_generated INTEGER DEFAULT 0
   );
 
   CREATE TABLE IF NOT EXISTS articles (
@@ -68,6 +69,7 @@ if (process.env.DATABASE_URL) {
     `ALTER TABLE users ADD COLUMN IF NOT EXISTS billing TEXT DEFAULT NULL`,
     `ALTER TABLE users ADD COLUMN IF NOT EXISTS subscribed_at TIMESTAMPTZ DEFAULT NULL`,
     `ALTER TABLE users ADD COLUMN IF NOT EXISTS trial_end TIMESTAMPTZ DEFAULT NULL`,
+    `ALTER TABLE users ADD COLUMN IF NOT EXISTS articles_generated INTEGER DEFAULT 0`,
   ];
   return Promise.all(migrations.map(sql => pool.query(sql)));
 }).catch(err => console.error('Erreur init DB PostgreSQL:', err));
@@ -104,8 +106,9 @@ if (process.env.DATABASE_URL) {
       plan          TEXT DEFAULT 'free',
       billing       TEXT DEFAULT NULL,
       subscribed_at TEXT DEFAULT NULL,
-      trial_end     TEXT DEFAULT NULL,
-      created_at    TEXT DEFAULT (datetime('now'))
+      trial_end          TEXT DEFAULT NULL,
+      created_at         TEXT DEFAULT (datetime('now')),
+      articles_generated INTEGER DEFAULT 0
     );
 
     CREATE TABLE IF NOT EXISTS articles (
@@ -147,6 +150,7 @@ if (process.env.DATABASE_URL) {
     `ALTER TABLE users ADD COLUMN billing TEXT DEFAULT NULL`,
     `ALTER TABLE users ADD COLUMN subscribed_at TEXT DEFAULT NULL`,
     `ALTER TABLE users ADD COLUMN trial_end TEXT DEFAULT NULL`,
+    `ALTER TABLE users ADD COLUMN articles_generated INTEGER DEFAULT 0`,
   ];
   for (const sql of migrations) {
     try { sqlite.exec(sql); } catch { /* colonne déjà existante */ }
