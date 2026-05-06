@@ -643,6 +643,8 @@ function updatePrices(isAnnual, labelMonthly, labelAnnual) {
   document.querySelectorAll('.plan-billing-note').forEach(el => {
     el.textContent = isAnnual ? el.dataset.annual : el.dataset.monthly;
   });
+  const priceOld = document.getElementById('price-original');
+  if (priceOld) priceOld.classList.toggle('visible', isAnnual);
 }
 
 function setupSubscriptionActions(currentSub) {

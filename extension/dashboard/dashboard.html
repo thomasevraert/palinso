@@ -739,6 +739,12 @@
     .plan-price    { font-size: 46px; font-weight: 800; color: var(--ink); letter-spacing: -2px; }
     .plan-per      { font-size: 13px; color: var(--mist); padding-bottom: 7px; }
     .plan-price-free { font-size: 28px; font-weight: 800; color: var(--ink); padding: 12px 0 6px; }
+    .plan-price-old {
+      font-size: 18px; font-weight: 600; color: var(--mist);
+      text-decoration: line-through; text-align: center;
+      display: none; margin-bottom: 2px;
+    }
+    .plan-price-old.visible { display: block; }
 
     .plan-billing-note {
       font-size: 11px;
@@ -1508,12 +1514,13 @@
             <div class="plan-popular-badge">Tout débloqué</div>
             <div class="plan-header">
               <div class="plan-name">Pro</div>
+              <div class="plan-price-old" id="price-original">€4,99</div>
               <div class="plan-price-wrap">
                 <span class="plan-currency">€</span>
-                <span class="plan-price" data-monthly="4.99" data-annual="3.49">4,99</span>
+                <span class="plan-price" data-monthly="4.99" data-annual="3.99">4,99</span>
                 <span class="plan-per">/mois</span>
               </div>
-              <div class="plan-billing-note" data-monthly="facturé mensuellement" data-annual="ou 3,99 €/mois · facturé annuellement">facturé mensuellement</div>
+              <div class="plan-billing-note" data-monthly="facturé mensuellement" data-annual="47,88 € facturé annuellement">facturé mensuellement</div>
             </div>
 
             <button class="plan-btn plan-btn-filled" data-plan="pro">S'abonner</button>
