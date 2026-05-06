@@ -979,14 +979,18 @@ document.getElementById('gen-preview-btn').addEventListener('click', async () =>
   // Capture the rendered HTML via a background tab — same path as the extension
   // button, avoids server-side 403/429 blocks on news sites like Le Monde
   let html = null;
+  let capturedTitle = '';
   try {
     const captured = await new Promise(resolve => {
       chrome.runtime.sendMessage({ type: 'CAPTURE_HTML', url }, resolve);
     });
-    if (captured && !captured.error && captured.html) html = captured.html;
+    if (captured && !captured.error && captured.html) {
+      html = captured.html;
+      capturedTitle = captured.title || '';
+    }
   } catch { /* fallback: server-side extraction */ }
 
-  genPayload = { url, html, format: genFormat, title: '', category: null, kindleMode: false };
+  genPayload = { url, html, format: genFormat, title: capturedTitle, category: null, kindleMode: false };
   startExtraction();
 });
 

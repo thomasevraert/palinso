@@ -81,42 +81,61 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 // envoie GET_PAGE_HTML au content script (Readability auto-injecté).
 function captureHtmlFromUrl(url) {
   return new Promise((resolve, reject) => {
-    let tabId   = null;
-    let settled = false;
-    let timeoutId;
+    // Reuse an existing tab with this URL to avoid opening a new one
+    chrome.tabs.query({ url }, (existingTabs) => {
+      if (existingTabs && existingTabs.length > 0) {
+        const existingTab = existingTabs[0];
+        chrome.tabs.sendMessage(existingTab.id, { type: 'GET_PAGE_HTML' }, (result) => {
+          if (chrome.runtime.lastError || !result || !result.html) {
+            // Existing tab didn't respond, fall back to opening a new tab
+            captureHtmlViaNewTab(url, resolve, reject);
+          } else {
+            resolve({ html: result.html, title: result.title });
+          }
+        });
+      } else {
+        captureHtmlViaNewTab(url, resolve, reject);
+      }
+    });
+  });
+}
 
-    function settle(value) {
-      if (settled) return;
-      settled = true;
-      clearTimeout(timeoutId);
-      chrome.tabs.onUpdated.removeListener(onUpdated);
-      if (tabId !== null) chrome.tabs.remove(tabId).catch(() => {});
-      if (value instanceof Error) reject(value);
-      else resolve(value);
-    }
+function captureHtmlViaNewTab(url, resolve, reject) {
+  let tabId   = null;
+  let settled = false;
+  let timeoutId;
 
-    function onUpdated(updatedTabId, changeInfo) {
-      if (updatedTabId !== tabId || changeInfo.status !== 'complete') return;
-      chrome.tabs.sendMessage(tabId, { type: 'GET_PAGE_HTML' }, (result) => {
-        if (chrome.runtime.lastError || !result) {
-          settle({ html: null });
-          return;
-        }
-        settle({ html: result.html, title: result.title });
-      });
-    }
+  function settle(value) {
+    if (settled) return;
+    settled = true;
+    clearTimeout(timeoutId);
+    chrome.tabs.onUpdated.removeListener(onUpdated);
+    if (tabId !== null) chrome.tabs.remove(tabId).catch(() => {});
+    if (value instanceof Error) reject(value);
+    else resolve(value);
+  }
 
-    chrome.tabs.onUpdated.addListener(onUpdated);
-
-    chrome.tabs.create({ url, active: false }, (tab) => {
-      if (chrome.runtime.lastError) {
-        chrome.tabs.onUpdated.removeListener(onUpdated);
-        reject(new Error(chrome.runtime.lastError.message));
+  function onUpdated(updatedTabId, changeInfo) {
+    if (updatedTabId !== tabId || changeInfo.status !== 'complete') return;
+    chrome.tabs.sendMessage(tabId, { type: 'GET_PAGE_HTML' }, (result) => {
+      if (chrome.runtime.lastError || !result) {
+        settle({ html: null });
         return;
       }
-      tabId     = tab.id;
-      timeoutId = setTimeout(() => settle(new Error("Délai d'attente dépassé (30s).")), 30000);
+      settle({ html: result.html, title: result.title });
     });
+  }
+
+  chrome.tabs.onUpdated.addListener(onUpdated);
+
+  chrome.tabs.create({ url, active: false }, (tab) => {
+    if (chrome.runtime.lastError) {
+      chrome.tabs.onUpdated.removeListener(onUpdated);
+      reject(new Error(chrome.runtime.lastError.message));
+      return;
+    }
+    tabId     = tab.id;
+    timeoutId = setTimeout(() => settle(new Error("Délai d'attente dépassé (30s).")), 30000);
   });
 }
 
