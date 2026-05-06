@@ -473,7 +473,8 @@
     .profile-feedback.error   { background: #fdf2f1; color: #8b2020; border: 1px solid #f0c5c1; }
 
     /* ── Modal Kindle ── */
-    #kindle-missing-modal {
+    #kindle-missing-modal,
+    #kepub-upgrade-modal {
       display: none;
       position: fixed; inset: 0;
       background: rgba(3,31,45,0.5);
@@ -484,6 +485,7 @@
     }
 
     #kindle-missing-modal.open { display: flex; }
+    #kepub-upgrade-modal.open  { display: flex; }
 
     .modal-box {
       background: var(--white);
@@ -1645,6 +1647,18 @@
       </div>
 
     </main>
+  </div>
+
+  <!-- Modal KEPUB offre insuffisante -->
+  <div id="kepub-upgrade-modal">
+    <div class="modal-box">
+      <h3>Format KEPUB non disponible</h3>
+      <p>Le format KEPUB est réservé aux abonnés Pro. Passez à l'offre Pro pour télécharger vos articles en KEPUB, optimisé pour les liseuses Kobo.</p>
+      <div class="modal-actions">
+        <button class="modal-btn modal-btn-cancel" id="kepub-modal-cancel">Fermer</button>
+        <button class="modal-btn modal-btn-primary" id="kepub-modal-subscribe">Voir les offres →</button>
+      </div>
+    </div>
   </div>
 
   <!-- Modal Kindle manquant -->
