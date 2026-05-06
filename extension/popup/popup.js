@@ -18,6 +18,19 @@ const btnLogout           = document.getElementById('btn-logout');
 const kindleModal         = document.getElementById('kindle-modal');
 
 let cachedQuota = null;
+const proModal = document.getElementById('pro-modal');
+
+function isFreePlan() {
+  if (cachedQuota && cachedQuota.plan) return cachedQuota.plan === 'free';
+  return new Promise(resolve => {
+    chrome.storage.local.get('subscription', r => resolve(!r.subscription || r.subscription.plan === 'free'));
+  });
+}
+
+function showProModal(message) {
+  document.getElementById('pro-modal-text').textContent = message;
+  proModal.classList.add('open');
+}
 
 // ── Format ────────────────────────────────────────────────────────
 let selectedFormat = 'epub3';
@@ -95,6 +108,24 @@ document.getElementById('quota-modal-cancel').addEventListener('click', function
 
 document.getElementById('quota-modal-upgrade').addEventListener('click', async function() {
   quotaModal.classList.remove('open');
+  const dashboardUrl = chrome.runtime.getURL('dashboard/dashboard.html');
+  const tabs = await chrome.tabs.query({ url: dashboardUrl });
+  if (tabs.length > 0) {
+    chrome.tabs.update(tabs[0].id, { active: true });
+    chrome.windows.update(tabs[0].windowId, { focused: true });
+    chrome.tabs.sendMessage(tabs[0].id, { type: 'OPEN_SUBSCRIPTION' });
+  } else {
+    chrome.tabs.create({ url: dashboardUrl + '#subscription' });
+  }
+});
+
+// ── Modal offre Pro requise ───────────────────────────────────────
+document.getElementById('pro-modal-cancel').addEventListener('click', function() {
+  proModal.classList.remove('open');
+});
+
+document.getElementById('pro-modal-subscribe').addEventListener('click', async function() {
+  proModal.classList.remove('open');
   const dashboardUrl = chrome.runtime.getURL('dashboard/dashboard.html');
   const tabs = await chrome.tabs.query({ url: dashboardUrl });
   if (tabs.length > 0) {
@@ -242,6 +273,10 @@ btnSend.addEventListener('click', async function() {
     showQuotaModal(cachedQuota);
     return;
   }
+  if (selectedFormat === 'kepub' && await isFreePlan()) {
+    showProModal('Le format KEPUB est réservé aux abonnés Pro. Passez à l\'offre Pro pour télécharger vos articles en KEPUB, optimisé pour les liseuses Kobo.');
+    return;
+  }
   btnSend.disabled = true;
   showStatus('Préparation de l\'aperçu...', 'info');
   await openGenerationView(false);
@@ -252,6 +287,10 @@ btnSend.addEventListener('click', async function() {
 btnKindle.addEventListener('click', async function() {
   if (cachedQuota && cachedQuota.limit !== null && cachedQuota.remaining === 0) {
     showQuotaModal(cachedQuota);
+    return;
+  }
+  if (await isFreePlan()) {
+    showProModal('L\'envoi direct vers votre Kindle est réservé aux abonnés Pro. Passez à l\'offre Pro pour débloquer cette fonctionnalité.');
     return;
   }
   const kindleEmail = await getKindleEmailFromProfile();

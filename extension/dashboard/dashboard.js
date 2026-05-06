@@ -6,7 +6,6 @@ const API_BASE = 'https://kolio-production.up.railway.app/api';
 let allArticles    = [];
 let activeCategory = 'all';
 let pollingTimer   = null;
-let genUserPlan    = null;
 
 async function apiFetch(endpoint, options = {}) {
   const { token } = await chrome.storage.local.get('token');
@@ -95,15 +94,6 @@ document.getElementById('kindle-modal-cancel').addEventListener('click', () => {
 document.getElementById('kindle-modal-go-profile').addEventListener('click', () => {
   document.getElementById('kindle-missing-modal').classList.remove('open');
   switchTab('profile');
-});
-
-document.getElementById('kepub-modal-cancel').addEventListener('click', () => {
-  document.getElementById('kepub-upgrade-modal').classList.remove('open');
-});
-
-document.getElementById('kepub-modal-subscribe').addEventListener('click', () => {
-  document.getElementById('kepub-upgrade-modal').classList.remove('open');
-  switchTab('subscription');
 });
 
 document.getElementById('btn-save-profile').addEventListener('click', saveProfile);
@@ -836,8 +826,6 @@ function renderGenQuota(quota) {
   const submitEl = document.getElementById('gen-submit-epub');
   const kindleEl = document.getElementById('gen-submit-kindle');
 
-  genUserPlan = quota.plan;
-
   if (quota.limit === null) { box.style.display = 'none'; return; }
 
   box.style.display  = 'block';
@@ -877,18 +865,6 @@ async function loadCategorySuggestions() {
 
 async function submitGeneration(kindleMode) {
   if (!genExtracted || !genPayload) return;
-
-  if (genFormat === 'kepub') {
-    let plan = genUserPlan;
-    if (!plan) {
-      const stored = await new Promise(r => chrome.storage.local.get('subscription', r));
-      plan = stored.subscription?.plan || 'free';
-    }
-    if (plan === 'free') {
-      document.getElementById('kepub-upgrade-modal').classList.add('open');
-      return;
-    }
-  }
 
   const submitEpub   = document.getElementById('gen-submit-epub');
   const submitKindle = document.getElementById('gen-submit-kindle');

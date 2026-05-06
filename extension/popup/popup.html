@@ -278,7 +278,7 @@
     }
 
     /* ── Modal ── */
-    #kindle-modal, #quota-modal {
+    #kindle-modal, #quota-modal, #pro-modal {
       display: none;
       position: fixed;
       inset: 0;
@@ -290,7 +290,7 @@
       backdrop-filter: blur(2px);
     }
 
-    #kindle-modal.open, #quota-modal.open { display: flex; }
+    #kindle-modal.open, #quota-modal.open, #pro-modal.open { display: flex; }
 
     .modal-box {
       background: var(--white);
@@ -417,6 +417,18 @@
       <div class="modal-actions">
         <button class="modal-btn modal-btn-cancel" id="quota-modal-cancel">Fermer</button>
         <button class="modal-btn modal-btn-primary" id="quota-modal-upgrade">Voir les offres</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal offre Pro requise -->
+  <div id="pro-modal">
+    <div class="modal-box">
+      <h3>Fonctionnalité Pro</h3>
+      <p id="pro-modal-text"></p>
+      <div class="modal-actions">
+        <button class="modal-btn modal-btn-cancel" id="pro-modal-cancel">Fermer</button>
+        <button class="modal-btn modal-btn-primary" id="pro-modal-subscribe">Souscrire →</button>
       </div>
     </div>
   </div>
