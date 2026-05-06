@@ -354,6 +354,10 @@ function renderArticles() {
 }
 
 async function handleKindleSend(articleId, btn) {
+  if (await getDashUserPlan() === 'free') {
+    showProModal('L\'envoi direct vers votre Kindle est réservé aux abonnés Pro. Passez à l\'offre Pro pour débloquer cette fonctionnalité.');
+    return;
+  }
   const { kindleEmail } = await getUserFromStorage();
   if (!kindleEmail) { document.getElementById('kindle-missing-modal').classList.add('open'); return; }
   btn.disabled = true; btn.textContent = '⏳';
@@ -893,8 +897,15 @@ async function loadCategorySuggestions() {
 async function submitGeneration(kindleMode) {
   if (!genExtracted || !genPayload) return;
 
-  if (genFormat === 'kepub' && await getDashUserPlan() === 'free') {
+  const userPlan = await getDashUserPlan();
+
+  if (genFormat === 'kepub' && userPlan === 'free') {
     showProModal('Le format KEPUB est réservé aux abonnés Pro. Passez à l\'offre Pro pour télécharger vos articles en KEPUB, optimisé pour les liseuses Kobo.');
+    return;
+  }
+
+  if (kindleMode && userPlan === 'free') {
+    showProModal('L\'envoi direct vers votre Kindle est réservé aux abonnés Pro. Passez à l\'offre Pro pour débloquer cette fonctionnalité.');
     return;
   }
 
