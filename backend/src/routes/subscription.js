@@ -14,6 +14,7 @@ const express        = require('express');
 const router         = express.Router();
 const db             = require('../db');
 const authMiddleware = require('../middleware/auth');
+const { deleteExpiredArticlesForUser } = require('../services/cleanup');
 
 // ── Helper : calcule l'abonnement effectif ────────────────────────
 async function getEffectiveSubscription(userId) {
@@ -105,6 +106,11 @@ router.post('/', authMiddleware, async (req, res) => {
       `UPDATE users SET plan = $1, billing = $2, subscribed_at = $3, trial_end = NULL WHERE id = $4`,
       [plan, billingValue, subscribedAt, req.userId]
     );
+
+    // Downgrade vers free : supprimer les articles de plus de 7 jours immédiatement
+    if (plan === 'free') {
+      await deleteExpiredArticlesForUser(req.userId, 'free');
+    }
 
     const sub = await getEffectiveSubscription(req.userId);
     res.json(sub);

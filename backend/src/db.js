@@ -2,7 +2,7 @@
  * db.js — Base de données
  *
  * Schéma users (colonnes subscription) :
- *   plan          TEXT    DEFAULT 'free'   → free | essentiel | premium
+ *   plan          TEXT    DEFAULT 'free'   → free | pro
  *   billing       TEXT    DEFAULT NULL     → monthly | annual | NULL (free)
  *   subscribed_at TEXT/TIMESTAMPTZ NULL    → date de souscription PAYANTE (pas le trial)
  *   trial_end     TEXT/TIMESTAMPTZ NULL    → date de fin du trial (7j après inscription)

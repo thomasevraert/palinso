@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const cors    = require('cors');
+const { runGlobalCleanup } = require('./services/cleanup');
 
 const app = express();
 
@@ -24,4 +25,8 @@ app.listen(PORT, () => {
   → http://localhost:${PORT}
   → Test : http://localhost:${PORT}/health
   `);
+
+  // Nettoyage des articles expirés : au démarrage puis toutes les 6 heures
+  runGlobalCleanup();
+  setInterval(runGlobalCleanup, 6 * 60 * 60 * 1000);
 });
