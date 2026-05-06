@@ -17,6 +17,8 @@ const userNameEl          = document.getElementById('user-name');
 const btnLogout           = document.getElementById('btn-logout');
 const kindleModal         = document.getElementById('kindle-modal');
 
+let cachedQuota = null;
+
 // ── Format ────────────────────────────────────────────────────────
 let selectedFormat = 'epub3';
 
@@ -105,13 +107,8 @@ document.getElementById('quota-modal-upgrade').addEventListener('click', async f
 });
 
 function showQuotaModal(quota) {
-  const planLabels = { free: 'Gratuit', essentiel: 'Essentiel', premium: 'Premium' };
-  const nextPlan   = { free: 'Essentiel', essentiel: 'Premium' };
-  const planLabel  = planLabels[quota.plan] || quota.plan;
-  const next       = nextPlan[quota.plan];
-  const textEl     = document.getElementById('quota-modal-text');
-  textEl.textContent = `Vous avez utilisé vos ${quota.limit} conversions de ce mois (offre ${planLabel}).`
-    + (next ? ` Passez à l'offre ${next} pour en obtenir davantage.` : '');
+  const textEl = document.getElementById('quota-modal-text');
+  textEl.textContent = `Vous avez utilisé vos ${quota.limit} conversion${quota.limit > 1 ? 's' : ''} du mois (offre Gratuite). Passez à l'offre Pro pour des conversions illimitées.`;
   quotaModal.classList.add('open');
 }
 
@@ -139,23 +136,35 @@ function loadPlanBanner() {
       } else if (daysLeft <= 2) {
         banner.className = 'trial-urgent';
         icon.textContent = '⏳';
-        text.innerHTML   = '<strong>Essai Premium</strong> — plus que <strong>' + daysLeft + ' jour' + (daysLeft > 1 ? 's' : '') + '</strong> !';
+        text.innerHTML   = '<strong>Essai Pro</strong> — plus que <strong>' + daysLeft + ' jour' + (daysLeft > 1 ? 's' : '') + '</strong> !';
       } else {
         banner.className = 'trial';
         icon.textContent = '⭐';
-        text.innerHTML   = '<strong>Essai Premium</strong> en cours — <strong>' + daysLeft + ' jours</strong> restants';
+        text.innerHTML   = '<strong>Essai Pro</strong> en cours — <strong>' + daysLeft + ' jours</strong> restants';
       }
       banner.style.display = 'flex';
       return;
     }
 
     // Abonnement payant actif
-    const planLabel      = sub.plan === 'premium' ? 'Premium' : 'Essentiel';
     banner.className     = 'active-plan';
-    icon.textContent     = sub.plan === 'premium' ? '⭐' : '✦';
-    text.innerHTML       = 'Plan <strong>' + planLabel + '</strong> actif';
+    icon.textContent     = '⭐';
+    text.innerHTML       = 'Plan <strong>Pro</strong> actif';
     banner.style.display = 'flex';
   });
+}
+
+// ── Quota : vérification préventive ──────────────────────────────
+async function loadQuota() {
+  try {
+    const { token } = await chrome.storage.local.get('token');
+    if (!token) return;
+    const res = await fetch(`${API_BASE}/articles/quota`, {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    if (!res.ok) return;
+    cachedQuota = await res.json();
+  } catch (e) { /* serveur non disponible */ }
 }
 
 // ── Init ──────────────────────────────────────────────────────────
@@ -174,6 +183,7 @@ async function init() {
   } catch (e) { /* serveur non disponible */ }
 
   loadPlanBanner();
+  await loadQuota();
 }
 
 // ── Collecte les données communes ─────────────────────────────────
@@ -228,6 +238,10 @@ async function openGenerationView(kindleMode) {
 
 // ── Bouton : Convertir ────────────────────────────────────────────
 btnSend.addEventListener('click', async function() {
+  if (cachedQuota && cachedQuota.limit !== null && cachedQuota.remaining === 0) {
+    showQuotaModal(cachedQuota);
+    return;
+  }
   btnSend.disabled = true;
   showStatus('Préparation de l\'aperçu...', 'info');
   await openGenerationView(false);
@@ -236,6 +250,10 @@ btnSend.addEventListener('click', async function() {
 
 // ── Bouton : Envoyer vers Kindle ──────────────────────────────────
 btnKindle.addEventListener('click', async function() {
+  if (cachedQuota && cachedQuota.limit !== null && cachedQuota.remaining === 0) {
+    showQuotaModal(cachedQuota);
+    return;
+  }
   const kindleEmail = await getKindleEmailFromProfile();
   if (!kindleEmail) { kindleModal.classList.add('open'); return; }
 

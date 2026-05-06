@@ -929,50 +929,6 @@
     #view-generation { display: none; }
     #view-generation.active { display: block; }
 
-    /* ── Formulaire URL (état initial) ── */
-    .gen-url-card {
-      background: var(--white);
-      border-radius: 14px;
-      border: 1px solid rgba(3,76,140,0.07);
-      box-shadow: 0 1px 3px rgba(3,31,45,0.06), 0 4px 16px rgba(3,31,45,0.04);
-      padding: 36px 40px;
-      max-width: 640px;
-    }
-
-    .gen-url-row {
-      display: flex;
-      gap: 10px;
-      align-items: stretch;
-    }
-
-    .gen-url-input {
-      flex: 1;
-      padding: 11px 14px;
-      border: 1.5px solid var(--border);
-      border-radius: 9px;
-      font-size: 14px;
-      font-family: 'DM Sans', sans-serif;
-      color: var(--ink);
-      background: #fafaf5;
-      outline: none;
-      transition: all 0.15s;
-    }
-
-    .gen-url-input:focus {
-      border-color: var(--navy);
-      background: var(--white);
-      box-shadow: 0 0 0 3px rgba(3,76,140,0.08);
-    }
-
-    .gen-url-input::placeholder { color: #aaa899; }
-
-    .gen-preview-btn {
-      padding: 11px 22px;
-      white-space: nowrap;
-      border-radius: 9px;
-      width: auto;
-    }
-
     .gen-pill-desc {
       display: block;
       font-size: 10px;
@@ -980,19 +936,6 @@
       opacity: 0.7;
       margin-top: 2px;
     }
-
-    .gen-url-hint {
-      margin-top: 20px;
-      padding: 10px 14px;
-      background: rgba(3,76,140,0.05);
-      border-left: 3px solid var(--navy);
-      border-radius: 0 7px 7px 0;
-      font-size: 12px;
-      color: var(--teal);
-      line-height: 1.5;
-    }
-
-    .gen-url-hint strong { color: var(--navy); }
 
     .gen-topbar {
       display: flex;
@@ -1365,10 +1308,7 @@
         <div class="nav-item active" data-tab="articles">
           <span class="nav-icon">📋</span> Mes articles
         </div>
-        <div class="nav-item" data-tab="generation">
-          <span class="nav-icon">✦</span> Nouvelle génération
-        </div>
-        <div class="nav-item" data-tab="profile">
+<div class="nav-item" data-tab="profile">
           <span class="nav-icon">👤</span> Profil
         </div>
         <div class="nav-item" data-tab="subscription">
@@ -1607,32 +1547,7 @@
           <h1 class="page-title">Aperçu avant génération</h1>
         </div>
 
-        <!-- État : formulaire URL (entrée manuelle) -->
-        <div id="gen-url-form" style="display:none">
-          <div class="gen-url-card">
-            <p class="gen-section-title" style="margin-bottom:20px">Entrez l'URL de l'article à convertir</p>
-
-            <div class="gen-url-row">
-              <input type="url" id="gen-url-input" class="gen-url-input"
-                placeholder="https://example.com/mon-article…" autocomplete="off" />
-              <button class="gen-btn gen-btn-primary gen-preview-btn" id="gen-preview-btn">Prévisualiser →</button>
-            </div>
-
-            <div class="gen-url-format" style="margin-top:18px">
-              <span class="gen-section-title" style="margin-bottom:10px; display:block">Format de sortie</span>
-              <div class="gen-format-pills" id="gen-url-format-pills">
-                <button class="gen-pill active" data-format="epub3">EPUB3<span class="gen-pill-desc">Universel / Kindle</span></button>
-                <button class="gen-pill" data-format="kepub">KEPUB<span class="gen-pill-desc">Kobo</span></button>
-              </div>
-            </div>
-
-            <p class="gen-url-hint">
-              💡 Vous pouvez aussi cliquer sur <strong>Convertir</strong> depuis l'extension sur n'importe quelle page pour bénéficier d'une extraction plus fiable.
-            </p>
-          </div>
-        </div>
-
-        <!-- État : chargement -->
+<!-- État : chargement -->
         <div id="gen-loading" class="gen-state">
           <div class="gen-state-icon">⏳</div>
           <div id="gen-loading-text">Chargement en cours…</div>

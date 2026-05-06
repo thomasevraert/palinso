@@ -743,24 +743,14 @@ async function loadGeneration() {
     chrome.storage.local.remove('generationPayload');
     startExtraction();
   } else if (genState !== 'preview' && genState !== 'loading') {
-    // Arrivée manuelle via le nav → formulaire URL
-    showGenUrlForm();
+    // Aucun payload et pas de génération en cours → retour aux articles
+    switchTab('articles');
   }
   // Si genState === 'preview' ou 'loading', on ne réinitialise pas
 }
 
-function showGenUrlForm() {
-  genState = 'url-input';
-  document.getElementById('gen-url-form').style.display  = 'block';
-  document.getElementById('gen-loading').style.display   = 'none';
-  document.getElementById('gen-error').style.display     = 'none';
-  document.getElementById('gen-content').style.display   = 'none';
-  document.getElementById('gen-back-btn').textContent    = '← Mes articles';
-}
-
 async function startExtraction() {
   genState = 'loading';
-  document.getElementById('gen-url-form').style.display  = 'none';
   document.getElementById('gen-loading').style.display   = 'block';
   document.getElementById('gen-error').style.display     = 'none';
   document.getElementById('gen-content').style.display   = 'none';
@@ -945,58 +935,19 @@ async function submitGeneration(kindleMode) {
 
 // ── Listeners de la vue génération ───────────────────────────────
 document.getElementById('gen-back-btn').addEventListener('click', () => {
-  if (genState === 'preview' || genState === 'error') {
-    genState     = null;
-    genExtracted = null;
-    showGenUrlForm();
-    if (genPayload) document.getElementById('gen-url-input').value = genPayload.url || '';
-  } else {
-    genState = null;
-    switchTab('articles');
-  }
+  genState     = null;
+  genExtracted = null;
+  genPayload   = null;
+  switchTab('articles');
 });
 
 document.getElementById('gen-retry-btn').addEventListener('click', () => {
   genState     = null;
   genExtracted = null;
-  showGenUrlForm();
-  if (genPayload) document.getElementById('gen-url-input').value = genPayload.url || '';
+  genPayload   = null;
+  switchTab('articles');
 });
 
-document.getElementById('gen-preview-btn').addEventListener('click', async () => {
-  const url = document.getElementById('gen-url-input').value.trim();
-  if (!url) return;
-
-  // Show loading immediately — capture can take several seconds
-  genState = 'loading';
-  document.getElementById('gen-url-form').style.display  = 'none';
-  document.getElementById('gen-loading').style.display   = 'block';
-  document.getElementById('gen-error').style.display     = 'none';
-  document.getElementById('gen-content').style.display   = 'none';
-  document.getElementById('gen-back-btn').textContent    = '← Retour';
-  document.getElementById('gen-loading-text').textContent = 'Chargement de la page…';
-
-  // Capture the rendered HTML via a background tab — same path as the extension
-  // button, avoids server-side 403/429 blocks on news sites like Le Monde
-  let html = null;
-  let capturedTitle = '';
-  try {
-    const captured = await new Promise(resolve => {
-      chrome.runtime.sendMessage({ type: 'CAPTURE_HTML', url }, resolve);
-    });
-    if (captured && !captured.error && captured.html) {
-      html = captured.html;
-      capturedTitle = captured.title || '';
-    }
-  } catch { /* fallback: server-side extraction */ }
-
-  genPayload = { url, html, format: genFormat, title: capturedTitle, category: null, kindleMode: false };
-  startExtraction();
-});
-
-document.getElementById('gen-url-input').addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') document.getElementById('gen-preview-btn').click();
-});
 
 document.querySelectorAll('.gen-pill').forEach(pill => {
   pill.addEventListener('click', () => {
