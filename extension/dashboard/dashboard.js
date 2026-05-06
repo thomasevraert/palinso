@@ -219,8 +219,8 @@ async function loadArticles() {
   }
 }
 
-const PLAN_LABELS = { free: 'Offre Gratuite', essentiel: 'Offre Essentiel', premium: 'Offre Premium' };
-const NEXT_PLAN   = { free: 'essentiel', essentiel: 'premium' };
+const PLAN_LABELS = { free: 'Offre Gratuite', pro: 'Offre Pro' };
+const NEXT_PLAN   = { free: 'pro' };
 
 function renderQuotaBar(quota) {
   const bar         = document.getElementById('quota-bar');
@@ -581,7 +581,7 @@ function renderSubscriptionUI(sub) {
     }
 
     resetPlanButtons();
-    document.querySelectorAll('.plan-btn[data-plan="premium"]').forEach(b => {
+    document.querySelectorAll('.plan-btn[data-plan="pro"]').forEach(b => {
       b.textContent = 'Essai en cours'; b.disabled = true; b.style.opacity = '0.55';
     });
     updatePrices(billingSwitch.checked, labelMonthly, labelAnnual);
@@ -592,7 +592,7 @@ function renderSubscriptionUI(sub) {
 
   // ── Plan payant actif ─────────────────────────────────────────
   if (sub.plan !== 'free') {
-    const planLabel    = sub.plan === 'premium' ? 'Premium' : 'Essentiel';
+    const planLabel    = 'Pro';
     const billingLabel = sub.billing === 'annual' ? 'annuel' : 'mensuel';
     const renewalDate  = sub.subscribedAt
       ? (() => {
@@ -660,7 +660,7 @@ function setupSubscriptionActions(currentSub) {
   const freshCta = trialCta.cloneNode(true);
   trialCta.parentNode.replaceChild(freshCta, trialCta);
   freshCta.addEventListener('click', () => {
-    document.getElementById('plan-essentiel').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    document.getElementById('plan-pro').scrollIntoView({ behavior: 'smooth', block: 'center' });
   });
 
   // Boutons plans

@@ -12,9 +12,8 @@ const authMiddleware = require('../middleware/auth');
 const { getEffectiveSubscription } = require('./subscription');
 
 const PLAN_LIMITS = {
-  free:      5,
-  essentiel: 20,
-  premium:   null,
+  free: 3,
+  pro:  null,
 };
 
 async function getMonthlyUsage(userId) {

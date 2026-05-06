@@ -653,9 +653,32 @@
 
     .plans-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
+      grid-template-columns: 1fr 1fr;
       gap: 18px;
       align-items: start;
+      max-width: 680px;
+      margin: 0 auto;
+    }
+
+    .format-badges {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin: 12px 0 4px;
+    }
+    .format-badge {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 20px;
+      background: #f0f0f0;
+      color: #999;
+      border: 1px solid #e0e0e0;
+    }
+    .format-badge.active {
+      background: #e6f4ea;
+      color: #2e7d32;
+      border-color: #a5d6a7;
     }
 
     .plan-card {
@@ -1525,67 +1548,49 @@
             <p class="plan-no-cc">&nbsp;</p>
 
             <hr class="plan-divider">
-            <p class="plan-features-title">Fonctionnalités</p>
             <ul class="plan-features">
-              <li>✓ Extension navigateur</li>
-              <li>✓ 10 conversions / mois</li>
-              <li>✓ Export EPUB3</li>
-              <li class="disabled">✗ Envoi vers Kindle</li>
-              <li class="disabled">✗ Export KEPUB</li>
-              <li class="disabled">✗ Catégorisation</li>
+              <li>✓ 3 conversions / mois</li>
+            </ul>
+            <div class="format-badges">
+              <span class="format-badge active">EPUB3</span>
+              <span class="format-badge">KEPUB</span>
+              <span class="format-badge">Kindle</span>
+            </div>
+            <ul class="plan-features">
+              <li>✓ Stockage 7 jours</li>
+              <li class="disabled">✗ KEPUB</li>
+              <li class="disabled">✗ Envoi Kindle</li>
             </ul>
           </div>
 
-          <!-- Plan Essentiel -->
-          <div class="plan-card" id="plan-essentiel">
+          <!-- Plan Pro -->
+          <div class="plan-card plan-card-featured" id="plan-pro">
+            <div class="plan-popular-badge">Tout débloqué</div>
             <div class="plan-header">
-              <div class="plan-name">Essentiel</div>
+              <div class="plan-name">Pro</div>
               <div class="plan-price-wrap">
                 <span class="plan-currency">€</span>
-                <span class="plan-price" data-monthly="3.99" data-annual="3.19">3,99</span>
+                <span class="plan-price" data-monthly="4.99" data-annual="3.49">4,99</span>
                 <span class="plan-per">/mois</span>
               </div>
-              <div class="plan-billing-note" data-monthly="facturé mensuellement" data-annual="facturé 38,28 € / an">facturé mensuellement</div>
+              <div class="plan-billing-note" data-monthly="facturé mensuellement" data-annual="ou 3,49 €/mois · facturé annuellement">facturé mensuellement</div>
             </div>
 
-            <button class="plan-btn plan-btn-outline" data-plan="essentiel">S'abonner</button>
+            <button class="plan-btn plan-btn-filled" data-plan="pro">S'abonner</button>
             <p class="plan-no-cc">Sans carte bancaire requise</p>
 
             <hr class="plan-divider">
-            <p class="plan-features-title">Tout Gratuit, plus :</p>
             <ul class="plan-features">
               <li>✓ Conversions illimitées</li>
-              <li>✓ Export EPUB3 &amp; KEPUB</li>
-              <li>✓ Envoi vers Kindle</li>
-              <li>✓ Catégorisation des articles</li>
-              <li class="disabled">✗ Résumés IA</li>
-              <li class="disabled">✗ Stockage étendu</li>
             </ul>
-          </div>
-
-          <!-- Plan Premium -->
-          <div class="plan-card plan-card-featured" id="plan-premium">
-            <div class="plan-popular-badge">Le plus populaire</div>
-            <div class="plan-header">
-              <div class="plan-name">Premium</div>
-              <div class="plan-price-wrap">
-                <span class="plan-currency">€</span>
-                <span class="plan-price" data-monthly="7.99" data-annual="6.39">7,99</span>
-                <span class="plan-per">/mois</span>
-              </div>
-              <div class="plan-billing-note" data-monthly="facturé mensuellement" data-annual="facturé 76,68 € / an">facturé mensuellement</div>
+            <div class="format-badges">
+              <span class="format-badge active">EPUB3</span>
+              <span class="format-badge active">KEPUB</span>
+              <span class="format-badge active">Kindle</span>
             </div>
-
-            <button class="plan-btn plan-btn-filled" data-plan="premium">S'abonner</button>
-            <p class="plan-no-cc">Sans carte bancaire requise</p>
-
-            <hr class="plan-divider">
-            <p class="plan-features-title">Tout Essentiel, plus :</p>
             <ul class="plan-features">
-              <li>✓ Résumés IA des articles</li>
-              <li>✓ Newsletters illimitées</li>
-              <li>✓ Formats multiples simultanés</li>
-              <li>✓ Stockage étendu (1 an)</li>
+              <li>✓ Tous formats simultanés</li>
+              <li>✓ Stockage 1 an</li>
               <li>✓ Support prioritaire</li>
             </ul>
           </div>

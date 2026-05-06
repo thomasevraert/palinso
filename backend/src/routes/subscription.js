@@ -32,7 +32,7 @@ async function getEffectiveSubscription(userId) {
     const msLeft   = trialEnd - now;
     const daysLeft = Math.ceil(msLeft / (1000 * 60 * 60 * 24));
     return {
-      plan:          'premium',
+      plan:          'pro',
       billing:       'trial',
       subscribedAt:  null,
       trialEnd:      user.trial_end,
@@ -42,7 +42,7 @@ async function getEffectiveSubscription(userId) {
   }
 
   // Trial expiré → downgrade automatique en base
-  if (trialEnd && trialEnd <= now && user.plan === 'premium' && !user.subscribed_at) {
+  if (trialEnd && trialEnd <= now && (user.plan === 'pro' || user.plan === 'premium') && !user.subscribed_at) {
     await db.run(
       `UPDATE users SET plan = 'free', billing = NULL, trial_end = NULL WHERE id = $1`,
       [userId]
@@ -85,7 +85,7 @@ router.get('/', authMiddleware, async (req, res) => {
 router.post('/', authMiddleware, async (req, res) => {
   const { plan, billing } = req.body;
 
-  const VALID_PLANS    = ['free', 'essentiel', 'premium'];
+  const VALID_PLANS    = ['free', 'pro'];
   const VALID_BILLINGS = ['monthly', 'annual', null];
 
   if (!VALID_PLANS.includes(plan)) {
