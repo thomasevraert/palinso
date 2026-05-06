@@ -473,7 +473,8 @@
     .profile-feedback.error   { background: #fdf2f1; color: #8b2020; border: 1px solid #f0c5c1; }
 
     /* ── Modal Kindle ── */
-    #kindle-missing-modal {
+    #kindle-missing-modal,
+    #pro-modal {
       display: none;
       position: fixed; inset: 0;
       background: rgba(3,31,45,0.5);
@@ -484,6 +485,7 @@
     }
 
     #kindle-missing-modal.open { display: flex; }
+    #pro-modal.open            { display: flex; }
 
     .modal-box {
       background: var(--white);
@@ -1645,6 +1647,18 @@
       </div>
 
     </main>
+  </div>
+
+  <!-- Modal offre Pro requise -->
+  <div id="pro-modal">
+    <div class="modal-box">
+      <h3>Fonctionnalité Pro</h3>
+      <p id="pro-modal-text"></p>
+      <div class="modal-actions">
+        <button class="modal-btn modal-btn-cancel" id="pro-modal-cancel">Fermer</button>
+        <button class="modal-btn modal-btn-primary" id="pro-modal-subscribe">Souscrire →</button>
+      </div>
+    </div>
   </div>
 
   <!-- Modal Kindle manquant -->

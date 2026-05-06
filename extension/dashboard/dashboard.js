@@ -6,6 +6,18 @@ const API_BASE = 'https://kolio-production.up.railway.app/api';
 let allArticles    = [];
 let activeCategory = 'all';
 let pollingTimer   = null;
+let dashUserPlan   = null;
+
+async function getDashUserPlan() {
+  if (dashUserPlan) return dashUserPlan;
+  const stored = await new Promise(r => chrome.storage.local.get('subscription', r));
+  return stored.subscription?.plan || 'free';
+}
+
+function showProModal(message) {
+  document.getElementById('pro-modal-text').textContent = message;
+  document.getElementById('pro-modal').classList.add('open');
+}
 
 async function apiFetch(endpoint, options = {}) {
   const { token } = await chrome.storage.local.get('token');
@@ -96,6 +108,15 @@ document.getElementById('kindle-modal-go-profile').addEventListener('click', () 
   switchTab('profile');
 });
 
+document.getElementById('pro-modal-cancel').addEventListener('click', () => {
+  document.getElementById('pro-modal').classList.remove('open');
+});
+
+document.getElementById('pro-modal-subscribe').addEventListener('click', () => {
+  document.getElementById('pro-modal').classList.remove('open');
+  switchTab('subscription');
+});
+
 document.getElementById('btn-save-profile').addEventListener('click', saveProfile);
 document.getElementById('btn-change-password').addEventListener('click', changePassword);
 
@@ -107,7 +128,7 @@ document.querySelectorAll('.pwd-toggle').forEach(btn => {
   });
 });
 
-document.getElementById('articles-body').addEventListener('click', (e) => {
+document.getElementById('articles-body').addEventListener('click', async (e) => {
   const categoryDisplay = e.target.closest('.category-display');
   if (categoryDisplay) {
     const cell = categoryDisplay.closest('.category-cell');
@@ -137,6 +158,10 @@ document.getElementById('articles-body').addEventListener('click', (e) => {
   if (action === 'send-kindle') handleKindleSend(articleId, btn);
   if (action === 'download') {
     const format = btn.closest('tr').querySelector('.format-select')?.value || 'epub3';
+    if (format === 'kepub' && await getDashUserPlan() === 'free') {
+      showProModal('Le téléchargement en KEPUB est réservé aux abonnés Pro. Passez à l\'offre Pro pour accéder à ce format, optimisé pour les liseuses Kobo.');
+      return;
+    }
     downloadArticle(articleId, format, btn);
   }
 });
@@ -826,6 +851,8 @@ function renderGenQuota(quota) {
   const submitEl = document.getElementById('gen-submit-epub');
   const kindleEl = document.getElementById('gen-submit-kindle');
 
+  dashUserPlan = quota.plan;
+
   if (quota.limit === null) { box.style.display = 'none'; return; }
 
   box.style.display  = 'block';
@@ -865,6 +892,11 @@ async function loadCategorySuggestions() {
 
 async function submitGeneration(kindleMode) {
   if (!genExtracted || !genPayload) return;
+
+  if (genFormat === 'kepub' && await getDashUserPlan() === 'free') {
+    showProModal('Le format KEPUB est réservé aux abonnés Pro. Passez à l\'offre Pro pour télécharger vos articles en KEPUB, optimisé pour les liseuses Kobo.');
+    return;
+  }
 
   const submitEpub   = document.getElementById('gen-submit-epub');
   const submitKindle = document.getElementById('gen-submit-kindle');
