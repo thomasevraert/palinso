@@ -1,3 +1,5 @@
+import { signInWithGoogle } from './googleAuth.js';
+
 // ⚠️ REMPLACE PAR L'URL DE TON SERVEUR RAILWAY APRÈS DÉPLOIEMENT
 const API_BASE = 'https://kolio-production.up.railway.app/api';
 // Pour dev local :
@@ -132,5 +134,21 @@ document.getElementById('btn-login').addEventListener('click', async () => {
   } finally {
     btn.disabled    = false;
     btn.textContent = 'Se connecter →';
+  }
+});
+
+// ── Connexion Google ─────────────────────────────────────────────
+document.getElementById('btn-google').addEventListener('click', async () => {
+  const btn = document.getElementById('btn-google');
+  btn.disabled    = true;
+  btn.textContent = 'Connexion en cours...';
+
+  try {
+    await signInWithGoogle();
+    openDashboard();
+  } catch (err) {
+    showError('login-error', err.message || 'Erreur lors de la connexion Google.');
+    btn.disabled    = false;
+    btn.textContent = 'Se connecter avec Google';
   }
 });

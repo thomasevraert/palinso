@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "description": "Envoie des articles web à ton Kindle en un clic",
 
-  "permissions": ["activeTab", "storage", "scripting", "tabs"],
+  "permissions": ["activeTab", "storage", "scripting", "tabs", "identity"],
 
   "host_permissions": [
     "https://kolio-production.up.railway.app/*",
@@ -29,6 +29,11 @@
       "js": ["Readability.js", "content.js"]
     }
   ],
+
+  "oauth2": {
+    "client_id": "1019448349808-39r9ij8dj3a35j95873lsenucl9390f1.apps.googleusercontent.com",
+    "scopes": ["openid", "email", "profile"]
+  },
 
   "web_accessible_resources": [
     {

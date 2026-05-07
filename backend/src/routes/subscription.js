@@ -5,7 +5,7 @@
  * POST /api/subscription       → met à jour l'abonnement (pour les futurs paiements)
  *
  * Logique trial :
- *   - À l'inscription : trial_end = NOW + 7 jours, plan = 'premium'
+ *   - À l'inscription : trial_end = NOW + 7 jours, plan = 'pro'
  *   - Si trial_end < NOW : le trial est expiré → on remet plan = 'free' en base
  *   - L'objet retourné contient toujours le plan EFFECTIF
  */
@@ -43,7 +43,7 @@ async function getEffectiveSubscription(userId) {
   }
 
   // Trial expiré → downgrade automatique en base
-  if (trialEnd && trialEnd <= now && (user.plan === 'pro' || user.plan === 'premium') && !user.subscribed_at) {
+  if (trialEnd && trialEnd <= now && user.plan === 'pro' && !user.subscribed_at) {
     await db.run(
       `UPDATE users SET plan = 'free', billing = NULL, trial_end = NULL WHERE id = $1`,
       [userId]

@@ -46,7 +46,7 @@ router.post('/register', async (req, res) => {
 
     await db.run(
       `INSERT INTO users (id, email, password, name, kindle_email, plan, trial_end)
-       VALUES ($1, $2, $3, $4, $5, 'premium', $6)`,
+       VALUES ($1, $2, $3, $4, $5, 'pro', $6)`,
       [id, email.toLowerCase(), hashedPassword, name || null, kindleEmail || null, trialEnd.toISOString()]
     );
 
@@ -143,6 +143,57 @@ router.post('/change-password', async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     console.error('Erreur change-password:', err);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
+// ── POST /api/auth/google ────────────────────────────────────────
+router.post('/google', async (req, res) => {
+  const { token } = req.body;
+  if (!token) return res.status(401).json({ error: 'Token manquant' });
+
+  try {
+    const googleRes = await fetch(
+      `https://www.googleapis.com/oauth2/v3/userinfo?access_token=${token}`
+    );
+    if (!googleRes.ok) {
+      return res.status(401).json({ error: 'Token Google invalide' });
+    }
+
+    const { sub: googleId, email: rawEmail, given_name: firstName } = await googleRes.json();
+    const email = rawEmail.toLowerCase();
+
+    let user = await db.get(
+      'SELECT * FROM users WHERE google_id = $1 OR email = $2',
+      [googleId, email]
+    );
+
+    if (user && user.google_id === null) {
+      await db.run(
+        'UPDATE users SET google_id = $1, first_name = COALESCE(first_name, $2) WHERE id = $3',
+        [googleId, firstName, user.id]
+      );
+      user = await db.get('SELECT * FROM users WHERE id = $1', [user.id]);
+    }
+
+    if (!user) {
+      const id = uuidv4();
+      const trialEnd = new Date();
+      trialEnd.setDate(trialEnd.getDate() + 7);
+
+      await db.run(
+        `INSERT INTO users (id, email, google_id, first_name, plan, trial_end)
+         VALUES ($1, $2, $3, $4, 'pro', $5)`,
+        [id, email, googleId, firstName, trialEnd.toISOString()]
+      );
+      user = await db.get('SELECT * FROM users WHERE id = $1', [id]);
+    }
+
+    const jwtToken = jwt.sign({ userId: user.id, email: user.email }, JWT_SECRET, { expiresIn: JWT_EXPIRES });
+    res.json({ token: jwtToken, email: user.email, firstName: user.first_name });
+
+  } catch (err) {
+    console.error('Erreur auth/google:', err);
     res.status(500).json({ error: 'Erreur serveur' });
   }
 });

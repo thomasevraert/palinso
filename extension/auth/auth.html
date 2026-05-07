@@ -237,6 +237,15 @@
 
     #view-signup, #view-login { display: none; }
     #view-signup.active, #view-login.active { display: block; }
+
+    .btn-google {
+      background: var(--white);
+      color: var(--ink);
+      border: 1.5px solid #e8e6d4;
+      margin-top: 0;
+    }
+
+    .btn-google:hover::after { background: rgba(3,76,140,0.04); }
   </style>
 </head>
 <body>
@@ -301,9 +310,12 @@
           style="cursor:not-allowed; text-decoration:underline; text-decoration-style:dotted; opacity:0.55;"
         >Mot de passe oublié ?</span>
       </p>
+      <hr class="divider" style="margin-top:20px; margin-bottom:0;">
+      <p style="text-align:center; font-size:12px; color:var(--mist); margin: 10px 0 12px;">ou</p>
+      <button class="btn btn-google" id="btn-google">Se connecter avec Google</button>
     </div>
   </div>
 
-  <script src="auth.js"></script>
+  <script type="module" src="auth.js"></script>
 </body>
 </html>
