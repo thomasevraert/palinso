@@ -137,18 +137,26 @@ document.getElementById('btn-login').addEventListener('click', async () => {
   }
 });
 
-// ── Connexion Google ─────────────────────────────────────────────
-document.getElementById('btn-google').addEventListener('click', async () => {
-  const btn = document.getElementById('btn-google');
+// ── Google (login + signup) ───────────────────────────────────────
+async function handleGoogleAuth(btnId, errorId, loadingText, defaultText) {
+  const btn = document.getElementById(btnId);
   btn.disabled    = true;
-  btn.textContent = 'Connexion en cours...';
+  btn.textContent = loadingText;
 
   try {
     await signInWithGoogle();
     openDashboard();
   } catch (err) {
-    showError('login-error', err.message || 'Erreur lors de la connexion Google.');
+    showError(errorId, err.message || 'Erreur lors de la connexion Google.');
     btn.disabled    = false;
-    btn.textContent = 'Se connecter avec Google';
+    btn.textContent = defaultText;
   }
-});
+}
+
+document.getElementById('btn-google').addEventListener('click', () =>
+  handleGoogleAuth('btn-google', 'login-error', 'Connexion en cours...', 'Se connecter avec Google')
+);
+
+document.getElementById('btn-google-signup').addEventListener('click', () =>
+  handleGoogleAuth('btn-google-signup', 'signup-error', 'Connexion en cours...', 'Créer un compte avec Google')
+);
