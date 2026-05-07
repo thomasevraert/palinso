@@ -12,6 +12,8 @@
     "<all_urls>"
   ],
 
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAmHQMXAgRh6FsfqASpoDGLRwP/9AkFbcwoEMc1qVTp9G3PIkzYvihrUsAXDp9XH7a2qKI0drNzn5SZv1p8Rg8HZLWST80TzuFOE0OwksH/oq3tTnaW3iQhTLUFHHfu0G3yJZv47+DtNvk9UVnzOefIcAw74medfsz/23DfH21MiFpyy0U659LRjoRz/LqXK8+G1oO+mJ6l3Jt7Ez2NB8ozl0308GwLUeM8Q4inyqW9MM1YWEJntChjJJLQ4kbCqNPqe7lckFRPYzwuVK1JUeWPI7f1X0GitiJdCpcqmDfeaptY4tdFilUFSVfKjChfq4l2LwKFI8WwgFiAHBZydLTbQIDAQAB",
+
   "action": {
     "default_popup": "popup/popup.html",
     "default_title": "Envoyer au Kindle"
