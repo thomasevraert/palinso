@@ -4,6 +4,18 @@ const API_BASE = 'https://kolio-production.up.railway.app/api';
 // const API_BASE = 'http://localhost:3000/api';
 
 export const signInWithGoogle = async () => {
+  const cached = await new Promise((resolve) => {
+    chrome.identity.getAuthToken({ interactive: false }, (token) => {
+      resolve(chrome.runtime.lastError ? undefined : token);
+    });
+  });
+
+  if (cached) {
+    await new Promise((resolve) => {
+      chrome.identity.removeCachedAuthToken({ token: cached }, resolve);
+    });
+  }
+
   const token = await new Promise((resolve, reject) => {
     chrome.identity.getAuthToken({ interactive: true }, (token) => {
       if (chrome.runtime.lastError) {
@@ -29,7 +41,7 @@ export const signInWithGoogle = async () => {
   await chrome.storage.local.set({
     token: data.token,
     email: data.email,
-    firstName: data.firstName,
+    name: data.firstName,
   });
 
   return data;
