@@ -1,5 +1,5 @@
 // ⚠️ REMPLACE PAR L'URL DE TON SERVEUR RAILWAY APRÈS DÉPLOIEMENT
-const API_BASE = 'https://kolio-production.up.railway.app/api';
+const API_BASE = 'https://palinso-production.up.railway.app/api';
 // Pour dev local :
 // const API_BASE = 'http://localhost:3000/api';
 
