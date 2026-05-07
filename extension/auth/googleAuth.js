@@ -4,27 +4,30 @@ const API_BASE = 'https://kolio-production.up.railway.app/api';
 // const API_BASE = 'http://localhost:3000/api';
 
 export const signInWithGoogle = async () => {
-  const cached = await new Promise((resolve) => {
-    chrome.identity.getAuthToken({ interactive: false }, (token) => {
-      resolve(chrome.runtime.lastError ? undefined : token);
-    });
-  });
+  const { oauth2 } = chrome.runtime.getManifest();
 
-  if (cached) {
-    await new Promise((resolve) => {
-      chrome.identity.removeCachedAuthToken({ token: cached }, resolve);
-    });
-  }
+  const authUrl = new URL('https://accounts.google.com/o/oauth2/auth');
+  authUrl.searchParams.set('client_id', oauth2.client_id);
+  authUrl.searchParams.set('response_type', 'token');
+  authUrl.searchParams.set('redirect_uri', chrome.identity.getRedirectURL());
+  authUrl.searchParams.set('scope', oauth2.scopes.join(' '));
+  authUrl.searchParams.set('prompt', 'select_account');
 
-  const token = await new Promise((resolve, reject) => {
-    chrome.identity.getAuthToken({ interactive: true }, (token) => {
-      if (chrome.runtime.lastError) {
-        reject(new Error(chrome.runtime.lastError.message));
-      } else {
-        resolve(token);
+  const responseUrl = await new Promise((resolve, reject) => {
+    chrome.identity.launchWebAuthFlow(
+      { url: authUrl.toString(), interactive: true },
+      (url) => {
+        if (chrome.runtime.lastError) {
+          reject(new Error(chrome.runtime.lastError.message));
+        } else {
+          resolve(url);
+        }
       }
-    });
+    );
   });
+
+  const params = new URLSearchParams(new URL(responseUrl).hash.slice(1));
+  const token = params.get('access_token');
 
   const response = await fetch(`${API_BASE}/auth/google`, {
     method: 'POST',
