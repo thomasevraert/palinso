@@ -19,7 +19,7 @@ async function sendToKindle(epubPath, kindleEmail, articleTitle) {
     to: kindleEmail,
     // Le mot "Convert:" au début du sujet demande à Amazon de convertir le fichier
     subject: `Convert: ${articleTitle}`,
-    text: 'Envoyé depuis Kolio.',
+    text: 'Envoyé depuis Palinso.',
     attachments: [
       {
         filename: path.basename(epubPath),
