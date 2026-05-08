@@ -339,8 +339,10 @@ router.post('/reset-password', async (req, res) => {
 router.get('/verify-email', async (req, res) => {
   const { token } = req.query;
 
+  const htmlError = (msg) => `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Vérification email</title></head><body style="margin:0;padding:0;background:#ffffff;font-family:Arial,sans-serif;display:flex;justify-content:center;align-items:center;min-height:100vh;"><div style="text-align:center;padding:40px;">${msg}</div></body></html>`;
+
   if (!token) {
-    return res.status(400).json({ error: 'Lien invalide ou expiré' });
+    return res.status(400).set('Content-Type', 'text/html').send(htmlError('❌ Lien invalide ou expiré.'));
   }
 
   try {
@@ -356,7 +358,7 @@ router.get('/verify-email', async (req, res) => {
     );
 
     if (!record) {
-      return res.status(400).json({ error: 'Lien invalide ou expiré' });
+      return res.status(400).set('Content-Type', 'text/html').send(htmlError('❌ Lien invalide ou expiré.'));
     }
 
     await db.run(
@@ -369,11 +371,11 @@ router.get('/verify-email', async (req, res) => {
       [new Date().toISOString(), record.id]
     );
 
-    return res.status(200).json({ success: true, message: 'Email vérifié avec succès' });
+    return res.status(200).set('Content-Type', 'text/html').send(htmlError('✅ Email vérifié avec succès ! Vous pouvez retourner sur l\'extension.'));
 
   } catch (err) {
     console.error('Erreur verify-email:', err);
-    return res.status(500).json({ error: 'Erreur serveur' });
+    return res.status(500).set('Content-Type', 'text/html').send(htmlError('❌ Lien invalide ou expiré.'));
   }
 });
 

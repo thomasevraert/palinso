@@ -3,7 +3,7 @@ const { Resend } = require('resend');
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 async function sendVerificationEmail(to, token, userName) {
-  const verificationUrl = `${process.env.FRONTEND_URL}/verify-email?token=${token}`;
+  const verificationUrl = `${process.env.BACKEND_URL}/api/auth/verify-email?token=${token}`;
 
   const html = `
     <!DOCTYPE html>
