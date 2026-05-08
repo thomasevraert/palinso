@@ -10,45 +10,80 @@ async function sendVerificationEmail(to, token, userName) {
     <html lang="fr">
     <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
     <body style="margin:0;padding:0;background:#F2F1DF;font-family:Arial,sans-serif;">
-      <table width="100%" cellpadding="0" cellspacing="0" style="background:#F2F1DF;padding:40px 0;">
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#F2F1DF;padding:32px 20px 40px;">
         <tr>
           <td align="center">
-            <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:8px;overflow:hidden;max-width:600px;">
+
+            <!-- Top nav -->
+            <table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;margin-bottom:20px;">
               <tr>
-                <td style="background:#034C8C;padding:24px 40px;">
-                  <p style="margin:0;color:#ffffff;font-size:24px;font-family:Georgia,serif;">Palinso</p>
+                <td style="padding:0 4px 12px;">
+                  <p style="margin:0;color:#034C8C;font-size:20px;font-family:Georgia,serif;font-weight:bold;">Palinso</p>
                 </td>
               </tr>
+            </table>
+
+            <!-- Card -->
+            <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;max-width:560px;">
               <tr>
-                <td style="padding:40px;">
-                  <h1 style="margin:0 0 24px;font-size:22px;color:#034C8C;font-family:Georgia,serif;">Vérifiez votre adresse email</h1>
-                  <p style="margin:0 0 24px;color:#333333;font-size:16px;font-family:Arial,sans-serif;line-height:1.6;">
+                <td align="center" style="padding:48px 48px 40px;">
+
+                  <!-- Logo mark -->
+                  <table cellpadding="0" cellspacing="0" style="margin-bottom:28px;">
+                    <tr>
+                      <td align="center" valign="middle" style="width:52px;height:52px;background:#034C8C;border-radius:26px;text-align:center;">
+                        <span style="color:#ffffff;font-size:22px;font-family:Georgia,serif;font-weight:bold;">P</span>
+                      </td>
+                    </tr>
+                  </table>
+
+                  <!-- Heading -->
+                  <h1 style="margin:0 0 16px;font-size:26px;color:#1a1a1a;font-family:Georgia,serif;font-weight:bold;text-align:center;">
+                    Vérifiez votre adresse email
+                  </h1>
+
+                  <!-- Body -->
+                  <p style="margin:0 0 32px;color:#555555;font-size:15px;font-family:Arial,sans-serif;line-height:1.6;text-align:center;">
                     Bonjour ${userName}, merci de vous être inscrit sur Palinso. Cliquez sur le bouton ci-dessous pour activer votre compte.
                   </p>
-                  <table cellpadding="0" cellspacing="0">
+
+                  <!-- CTA Button -->
+                  <table cellpadding="0" cellspacing="0" width="100%" style="margin-bottom:28px;">
                     <tr>
-                      <td style="border-radius:6px;background:#034C8C;">
-                        <a href="${verificationUrl}" style="display:inline-block;padding:14px 32px;color:#ffffff;font-size:16px;font-weight:bold;font-family:Arial,sans-serif;text-decoration:none;border-radius:6px;">
+                      <td align="center" style="background:#034C8C;border-radius:8px;">
+                        <a href="${verificationUrl}" style="display:block;padding:16px 32px;color:#ffffff;font-size:16px;font-weight:bold;font-family:Arial,sans-serif;text-decoration:none;text-align:center;">
                           Vérifier mon email
                         </a>
                       </td>
                     </tr>
                   </table>
-                  <p style="margin:16px 0 0;color:#5A7E8C;font-size:13px;font-family:Arial,sans-serif;line-height:1.6;">
-                    Ce lien expire dans 24 heures.
+
+                  <!-- Disclaimer -->
+                  <p style="margin:0;color:#999999;font-size:13px;font-family:Arial,sans-serif;line-height:1.6;text-align:center;">
+                    Ce lien expire dans 24 heures. Si vous n'êtes pas à l'origine de cette demande, ignorez cet email — votre compte ne sera pas modifié.
                   </p>
-                  <p style="margin:24px 0 0;color:#5A7E8C;font-size:13px;font-family:Arial,sans-serif;line-height:1.6;">
-                    Si le bouton ne fonctionne pas, copiez ce lien dans votre navigateur :<br>
-                    <a href="${verificationUrl}" style="color:#034C8C;word-break:break-all;">${verificationUrl}</a>
-                  </p>
-                </td>
-              </tr>
-              <tr>
-                <td style="padding:16px 40px 24px;text-align:center;">
-                  <p style="margin:0;color:#5A7E8C;font-size:12px;font-family:Arial,sans-serif;">© Palinso — palinso.app</p>
+
                 </td>
               </tr>
             </table>
+
+            <!-- Footer -->
+            <table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;margin-top:36px;">
+              <tr>
+                <td align="center" style="padding:0 20px;">
+                  <p style="margin:0 0 6px;color:#666666;font-size:13px;font-family:Arial,sans-serif;text-align:center;line-height:1.5;">
+                    Votre solution de gestion intelligente, pensée pour les professionnels.
+                  </p>
+                  <p style="margin:0 0 12px;color:#888888;font-size:12px;font-family:Arial,sans-serif;text-align:center;">
+                    palinso.app
+                  </p>
+                  <p style="margin:0;color:#aaaaaa;font-size:11px;font-family:Arial,sans-serif;text-align:center;">
+                    © Palinso — Tous droits réservés
+                  </p>
+                </td>
+              </tr>
+            </table>
+
           </td>
         </tr>
       </table>
@@ -94,45 +129,80 @@ async function sendPasswordResetEmail(to, token, tokenType = 'reset') {
     <html lang="fr">
     <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
     <body style="margin:0;padding:0;background:#F2F1DF;font-family:Arial,sans-serif;">
-      <table width="100%" cellpadding="0" cellspacing="0" style="background:#F2F1DF;padding:40px 0;">
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#F2F1DF;padding:32px 20px 40px;">
         <tr>
           <td align="center">
-            <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:8px;overflow:hidden;max-width:600px;">
+
+            <!-- Top nav -->
+            <table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;margin-bottom:20px;">
               <tr>
-                <td style="background:#034C8C;padding:24px 40px;">
-                  <p style="margin:0;color:#ffffff;font-size:24px;font-family:Georgia,serif;">Palinso</p>
+                <td style="padding:0 4px 12px;">
+                  <p style="margin:0;color:#034C8C;font-size:20px;font-family:Georgia,serif;font-weight:bold;">Palinso</p>
                 </td>
               </tr>
+            </table>
+
+            <!-- Card -->
+            <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;max-width:560px;">
               <tr>
-                <td style="padding:40px;">
-                  <h1 style="margin:0 0 24px;font-size:22px;color:#034C8C;font-family:Georgia,serif;">${heading}</h1>
-                  <p style="margin:0 0 24px;color:#333333;font-size:16px;font-family:Arial,sans-serif;line-height:1.6;">
+                <td align="center" style="padding:48px 48px 40px;">
+
+                  <!-- Logo mark -->
+                  <table cellpadding="0" cellspacing="0" style="margin-bottom:28px;">
+                    <tr>
+                      <td align="center" valign="middle" style="width:52px;height:52px;background:#034C8C;border-radius:26px;text-align:center;">
+                        <span style="color:#ffffff;font-size:22px;font-family:Georgia,serif;font-weight:bold;">P</span>
+                      </td>
+                    </tr>
+                  </table>
+
+                  <!-- Heading -->
+                  <h1 style="margin:0 0 16px;font-size:26px;color:#1a1a1a;font-family:Georgia,serif;font-weight:bold;text-align:center;">
+                    ${heading}
+                  </h1>
+
+                  <!-- Body -->
+                  <p style="margin:0 0 32px;color:#555555;font-size:15px;font-family:Arial,sans-serif;line-height:1.6;text-align:center;">
                     ${body}
                   </p>
-                  <table cellpadding="0" cellspacing="0">
+
+                  <!-- CTA Button -->
+                  <table cellpadding="0" cellspacing="0" width="100%" style="margin-bottom:28px;">
                     <tr>
-                      <td style="border-radius:6px;background:#034C8C;">
-                        <a href="${resetUrl}" style="display:inline-block;padding:14px 32px;color:#ffffff;font-size:16px;font-weight:bold;font-family:Arial,sans-serif;text-decoration:none;border-radius:6px;">
+                      <td align="center" style="background:#034C8C;border-radius:8px;">
+                        <a href="${resetUrl}" style="display:block;padding:16px 32px;color:#ffffff;font-size:16px;font-weight:bold;font-family:Arial,sans-serif;text-decoration:none;text-align:center;">
                           ${buttonLabel}
                         </a>
                       </td>
                     </tr>
                   </table>
-                  <p style="margin:16px 0 0;color:#5A7E8C;font-size:13px;font-family:Arial,sans-serif;line-height:1.6;">
+
+                  <!-- Disclaimer -->
+                  <p style="margin:0;color:#999999;font-size:13px;font-family:Arial,sans-serif;line-height:1.6;text-align:center;">
                     ${subText}
                   </p>
-                  <p style="margin:24px 0 0;color:#5A7E8C;font-size:13px;font-family:Arial,sans-serif;line-height:1.6;">
-                    Si le bouton ne fonctionne pas, copiez ce lien dans votre navigateur :<br>
-                    <a href="${resetUrl}" style="color:#034C8C;word-break:break-all;">${resetUrl}</a>
-                  </p>
-                </td>
-              </tr>
-              <tr>
-                <td style="padding:16px 40px 24px;text-align:center;">
-                  <p style="margin:0;color:#5A7E8C;font-size:12px;font-family:Arial,sans-serif;">© Palinso — palinso.app</p>
+
                 </td>
               </tr>
             </table>
+
+            <!-- Footer -->
+            <table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;margin-top:36px;">
+              <tr>
+                <td align="center" style="padding:0 20px;">
+                  <p style="margin:0 0 6px;color:#666666;font-size:13px;font-family:Arial,sans-serif;text-align:center;line-height:1.5;">
+                    Votre solution de gestion intelligente, pensée pour les professionnels.
+                  </p>
+                  <p style="margin:0 0 12px;color:#888888;font-size:12px;font-family:Arial,sans-serif;text-align:center;">
+                    palinso.app
+                  </p>
+                  <p style="margin:0;color:#aaaaaa;font-size:11px;font-family:Arial,sans-serif;text-align:center;">
+                    © Palinso — Tous droits réservés
+                  </p>
+                </td>
+              </tr>
+            </table>
+
           </td>
         </tr>
       </table>
