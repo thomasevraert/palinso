@@ -136,9 +136,13 @@ router.get('/status', authMiddleware, async (req, res) => {
 // Enregistré dans index.js avec express.raw() AVANT express.json().
 // Pas de middleware JWT : l'authenticité est garantie par la signature Stripe.
 async function webhookHandler(req, res) {
+  // Ajoute ces 2 lignes ici
+  console.log('Webhook reçu — body type:', typeof req.body, '— is Buffer:', Buffer.isBuffer(req.body));
+  console.log('Signature header:', req.headers['stripe-signature'] ? 'présent' : 'absent');
+
   const sig = req.headers['stripe-signature'];
   let event;
-
+  // ... reste du code inchangé
   try {
     event = stripe.webhooks.constructEvent(
       req.body,

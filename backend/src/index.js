@@ -10,8 +10,8 @@ const app = express();
 // Webhook Stripe : doit recevoir le corps brut (Buffer), enregistré AVANT express.json()
 // express.json() consommerait le stream et la vérification de signature échouerait
 const { webhookHandler } = require('./routes/stripe');
-app.post('/api/stripe/webhook', express.raw({ type: 'application/json' }), webhookHandler);
 
+app.post('/api/stripe/webhook', express.raw({ type: '*/*' }), webhookHandler);
 app.use(cors({ origin: '*' }));
 app.use(express.json({ limit: '5mb' }));
 app.use(express.static(path.join(__dirname, '../public')));
