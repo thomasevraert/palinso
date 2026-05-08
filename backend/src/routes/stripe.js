@@ -139,15 +139,11 @@ async function webhookHandler(req, res) {
   const sig = req.headers['stripe-signature'];
   let event;
 
-  console.log('[Webhook] Content-Type:', req.headers['content-type']);
-  console.log('[Webhook] body type:', typeof req.body, Buffer.isBuffer(req.body) ? `Buffer(${req.body.length})` : 'NOT a Buffer');
-  console.log('[Webhook] secret prefix:', process.env.STRIPE_WEBHOOK_SECRET?.slice(0, 10));
-
   try {
     event = stripe.webhooks.constructEvent(
       req.body,
       sig,
-      process.env.STRIPE_WEBHOOK_SECRET
+      process.env.STRIPE_WEBHOOK_SECRET?.trim()
     );
   } catch (err) {
     console.error('Erreur signature webhook Stripe:', err.message);
