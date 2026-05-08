@@ -207,7 +207,8 @@ router.post('/google', async (req, res) => {
     if (user && user.google_id === null) {
       await db.run(
         `UPDATE users SET google_id = $1, first_name = COALESCE(first_name, $2),
-         auth_provider = CASE WHEN auth_provider = 'local' THEN 'both' ELSE auth_provider END
+         auth_provider = CASE WHEN auth_provider = 'local' THEN 'both' ELSE auth_provider END,
+         email_verified = TRUE
          WHERE id = $3`,
         [googleId, firstName, user.id]
       );
@@ -220,8 +221,8 @@ router.post('/google', async (req, res) => {
       trialEnd.setDate(trialEnd.getDate() + 7);
 
       await db.run(
-        `INSERT INTO users (id, email, google_id, first_name, plan, trial_end, auth_provider)
-         VALUES ($1, $2, $3, $4, 'pro', $5, 'google')`,
+        `INSERT INTO users (id, email, google_id, first_name, plan, trial_end, auth_provider, email_verified)
+         VALUES ($1, $2, $3, $4, 'pro', $5, 'google', TRUE)`,
         [id, email, googleId, firstName, trialEnd.toISOString()]
       );
       user = await db.get('SELECT * FROM users WHERE id = $1', [id]);
@@ -335,6 +336,92 @@ router.post('/reset-password', async (req, res) => {
   }
 });
 
+// ── GET /api/auth/me ─────────────────────────────────────────────
+router.get('/me', async (req, res) => {
+  const authHeader = req.headers['authorization'];
+  const token      = authHeader && authHeader.split(' ')[1];
+  if (!token) return res.status(401).json({ error: 'Token manquant' });
+  let decoded;
+  try {
+    decoded = jwt.verify(token, JWT_SECRET);
+  } catch {
+    return res.status(403).json({ error: 'Token invalide ou expiré' });
+  }
+  try {
+    const user = await db.get(
+      'SELECT email, name, email_verified, auth_provider FROM users WHERE id = $1',
+      [decoded.userId]
+    );
+    if (!user) return res.status(404).json({ error: 'Utilisateur introuvable' });
+    res.json({
+      email:          user.email,
+      name:           user.name          || null,
+      email_verified: !!user.email_verified,
+      auth_provider:  user.auth_provider || 'local',
+    });
+  } catch (err) {
+    console.error('Erreur /me:', err);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
+// Rate-limit mémoire pour resend-verification : 3 appels / heure / user
+const resendAttempts = new Map();
+function checkResendRateLimit(userId) {
+  const now       = Date.now();
+  const windowMs  = 60 * 60 * 1000;
+  const attempts  = (resendAttempts.get(userId) || []).filter(t => now - t < windowMs);
+  if (attempts.length >= 3) return false;
+  resendAttempts.set(userId, [...attempts, now]);
+  return true;
+}
+
+// ── POST /api/auth/resend-verification ───────────────────────────
+router.post('/resend-verification', async (req, res) => {
+  const authHeader = req.headers['authorization'];
+  const token      = authHeader && authHeader.split(' ')[1];
+  if (!token) return res.status(401).json({ error: 'Token manquant' });
+  let decoded;
+  try {
+    decoded = jwt.verify(token, JWT_SECRET);
+  } catch {
+    return res.status(403).json({ error: 'Token invalide ou expiré' });
+  }
+  try {
+    const user = await db.get(
+      'SELECT id, email, name, email_verified FROM users WHERE id = $1',
+      [decoded.userId]
+    );
+    if (!user) return res.status(404).json({ error: 'Utilisateur introuvable' });
+    if (user.email_verified) return res.status(400).json({ error: 'Email déjà vérifié' });
+
+    if (!checkResendRateLimit(user.id)) {
+      return res.status(429).json({ error: 'Limite atteinte — réessayez dans une heure.' });
+    }
+
+    await db.run(
+      'DELETE FROM email_verification_tokens WHERE user_id = $1 AND used_at IS NULL',
+      [user.id]
+    );
+
+    const rawToken  = crypto.randomBytes(32).toString('hex');
+    const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+    await db.run(
+      `INSERT INTO email_verification_tokens (id, user_id, token_hash, expires_at)
+       VALUES ($1, $2, $3, $4)`,
+      [uuidv4(), user.id, tokenHash, expiresAt.toISOString()]
+    );
+
+    await sendVerificationEmail(user.email, rawToken, user.name || user.email);
+    res.json({ message: 'Email de vérification renvoyé' });
+  } catch (err) {
+    console.error('Erreur resend-verification:', err);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
 // ── GET /api/auth/verify-email ───────────────────────────────────
 router.get('/verify-email', async (req, res) => {
   const { token } = req.query;
@@ -371,7 +458,8 @@ router.get('/verify-email', async (req, res) => {
       [new Date().toISOString(), record.id]
     );
 
-    return res.status(200).set('Content-Type', 'text/html').send(htmlError('✅ Email vérifié avec succès ! Vous pouvez retourner sur l\'extension.'));
+    const htmlSuccess = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Vérification email</title></head><body style="margin:0;padding:0;background:#ffffff;font-family:Arial,sans-serif;display:flex;justify-content:center;align-items:center;min-height:100vh;"><div style="text-align:center;padding:40px;"><p>✅ Email vérifié avec succès !</p><p>Cet onglet va se fermer automatiquement...</p></div><script>setTimeout(() => window.close(), 3000)</script></body></html>`;
+    return res.status(200).set('Content-Type', 'text/html').send(htmlSuccess);
 
   } catch (err) {
     console.error('Erreur verify-email:', err);

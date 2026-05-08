@@ -3,10 +3,11 @@ const API_BASE = 'https://palinso-production.up.railway.app/api';
 // Pour dev local :
 // const API_BASE = 'http://localhost:3000/api';
 
-let allArticles    = [];
-let activeCategory = 'all';
-let pollingTimer   = null;
-let dashUserPlan   = null;
+let allArticles       = [];
+let activeCategory    = 'all';
+let pollingTimer      = null;
+let dashUserPlan      = null;
+let emailVerifPolling = null;
 
 async function getDashUserPlan() {
   if (dashUserPlan) return dashUserPlan;
@@ -51,6 +52,7 @@ chrome.storage.local.get(['token', 'name', 'email'], (result) => {
     return;
   }
   document.getElementById('dashboard-user').textContent = result.name || result.email || 'Utilisateur';
+  initEmailVerificationBanner();
 });
 
 // ── Messages depuis le popup ──────────────────────────────────────
@@ -91,6 +93,7 @@ loadArticles();
 
 document.getElementById('btn-logout-dashboard').addEventListener('click', () => {
   stopPolling();
+  stopEmailVerifPolling();
   chrome.storage.local.remove(['token', 'name', 'email', 'kindleEmail', 'subscription'], () => {
     window.location.href = chrome.runtime.getURL('auth/auth.html');
   });
@@ -196,6 +199,65 @@ function startPolling() {
 function stopPolling() {
   if (pollingTimer) { clearInterval(pollingTimer); pollingTimer = null; }
 }
+
+// ── Vérification email — bannière + polling ───────────────────────
+async function initEmailVerificationBanner() {
+  try {
+    const res = await apiFetch('/auth/me');
+    if (!res.ok) return;
+    const { email_verified } = await res.json();
+    if (email_verified) return;
+    document.getElementById('email-verification-banner').classList.add('visible');
+    startEmailVerifPolling();
+  } catch { /* silencieux */ }
+}
+
+function startEmailVerifPolling() {
+  if (emailVerifPolling) return;
+  emailVerifPolling = setInterval(async () => {
+    try {
+      const res = await apiFetch('/auth/me');
+      if (!res.ok) return;
+      const { email_verified } = await res.json();
+      if (!email_verified) return;
+      stopEmailVerifPolling();
+      document.getElementById('email-verification-banner').classList.remove('visible');
+      if (!localStorage.getItem('palinso_email_verified_shown')) {
+        document.getElementById('email-verified-modal').classList.add('open');
+        localStorage.setItem('palinso_email_verified_shown', '1');
+      }
+    } catch { /* silencieux */ }
+  }, 4000);
+}
+
+function stopEmailVerifPolling() {
+  if (emailVerifPolling) { clearInterval(emailVerifPolling); emailVerifPolling = null; }
+}
+
+document.getElementById('btn-close-verified-modal').addEventListener('click', () => {
+  document.getElementById('email-verified-modal').classList.remove('open');
+});
+
+document.getElementById('btn-resend-verification').addEventListener('click', async () => {
+  const btn = document.getElementById('btn-resend-verification');
+  btn.disabled = true;
+  btn.textContent = '⏳ Envoi...';
+  try {
+    const res = await apiFetch('/auth/resend-verification', { method: 'POST' });
+    if (res.ok) {
+      btn.textContent = '✅ Email envoyé !';
+    } else {
+      const err = await res.json().catch(() => ({}));
+      btn.textContent = err.error || '❌ Erreur';
+    }
+  } catch {
+    btn.textContent = '❌ Erreur réseau';
+  }
+  setTimeout(() => {
+    btn.disabled = false;
+    btn.textContent = "Renvoyer l'email";
+  }, 4000);
+});
 
 async function silentRefresh() {
   try {

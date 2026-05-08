@@ -1300,6 +1300,51 @@
     .gen-preview-body::-webkit-scrollbar { width: 6px; }
     .gen-preview-body::-webkit-scrollbar-track { background: transparent; }
     .gen-preview-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    /* ── Bannière vérification email ── */
+    #email-verification-banner {
+      display: none;
+      align-items: center;
+      gap: 12px;
+      background: rgba(3,76,140,0.07);
+      border: 1px solid rgba(3,76,140,0.2);
+      border-radius: 10px;
+      padding: 12px 18px;
+      margin-bottom: 20px;
+      font-size: 13px;
+      color: var(--navy);
+    }
+    #email-verification-banner.visible { display: flex; }
+    .email-banner-text { flex: 1; }
+    #btn-resend-verification {
+      padding: 5px 12px;
+      background: transparent;
+      border: 1px solid var(--navy);
+      color: var(--navy);
+      border-radius: 7px;
+      font-size: 12px;
+      font-weight: 600;
+      font-family: 'DM Sans', sans-serif;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s;
+      flex-shrink: 0;
+    }
+    #btn-resend-verification:hover { background: var(--navy); color: white; }
+    #btn-resend-verification:disabled { opacity: 0.6; cursor: default; }
+
+    /* ── Modal email vérifié ── */
+    #email-verified-modal {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(3,31,45,0.5);
+      z-index: 200;
+      align-items: center; justify-content: center;
+      padding: 20px;
+      backdrop-filter: blur(3px);
+    }
+    #email-verified-modal.open { display: flex; }
+    #email-verified-modal .modal-box { border-top-color: #2e7d32; text-align: center; }
   </style>
 </head>
 <body>
@@ -1332,6 +1377,13 @@
 
     <!-- Contenu -->
     <main class="content">
+
+      <!-- Bannière vérification email -->
+      <div id="email-verification-banner">
+        <span>📧</span>
+        <span class="email-banner-text">Vérifiez votre email pour activer votre compte.</span>
+        <button id="btn-resend-verification">Renvoyer l'email</button>
+      </div>
 
       <!-- Vue : Articles -->
       <div id="view-articles" class="active">
@@ -1669,6 +1721,17 @@
       <div class="modal-actions">
         <button class="modal-btn modal-btn-cancel" id="kindle-modal-cancel">Fermer</button>
         <button class="modal-btn modal-btn-primary" id="kindle-modal-go-profile">Aller au profil →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal email vérifié -->
+  <div id="email-verified-modal">
+    <div class="modal-box">
+      <h3>🎉 Email vérifié ! Bienvenue sur Palinso.</h3>
+      <p>Votre adresse email a bien été confirmée.</p>
+      <div class="modal-actions" style="justify-content:center;">
+        <button class="modal-btn modal-btn-primary" id="btn-close-verified-modal" style="flex:none;padding:11px 32px;">Commencer</button>
       </div>
     </div>
   </div>
