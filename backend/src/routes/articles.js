@@ -10,6 +10,7 @@ const path = require('path');
 
 const authMiddleware = require('../middleware/auth');
 const { getEffectiveSubscription } = require('./subscription');
+const { isPro }      = require('../middleware/requirePro');
 
 const PLAN_LIMITS = {
   free: 3,
@@ -190,15 +191,14 @@ router.post('/', authMiddleware, async (req, res) => {
 
   // Vérification du quota mensuel
   try {
-    const sub   = await getEffectiveSubscription(req.userId);
-    const plan  = sub ? sub.plan : 'free';
-    const limit = PLAN_LIMITS[plan];
+    const pro   = await isPro(req.userId);
+    const limit = pro ? null : PLAN_LIMITS.free;
     if (limit !== null) {
       const used = await getMonthlyUsage(req.userId);
       if (used >= limit) {
         return res.status(429).json({
           error: 'QUOTA_EXCEEDED',
-          quota: { plan, limit, used, remaining: 0 },
+          quota: { plan: 'free', limit, used, remaining: 0 },
         });
       }
     }
@@ -248,13 +248,18 @@ router.post('/', authMiddleware, async (req, res) => {
     console.log(`✅ Article traité [${format}] : ${finalTitle}`);
 
     if (kindleEmail) {
-      try {
-        const { sendToKindle } = require('../services/mailer');
-        await sendToKindle(epubPath, kindleEmail, finalTitle);
-        await db.run('UPDATE articles SET kindle_sent = 1 WHERE id = $1', [id]);
-        console.log(`📬 Envoyé au Kindle : ${kindleEmail}`);
-      } catch (mailErr) {
-        console.error(`⚠️ Génération OK mais envoi Kindle échoué : ${mailErr.message}`);
+      const pro = await isPro(req.userId);
+      if (!pro) {
+        console.log(`⚠️ Kindle ignoré (plan free) pour l'article ${id}`);
+      } else {
+        try {
+          const { sendToKindle } = require('../services/mailer');
+          await sendToKindle(epubPath, kindleEmail, finalTitle);
+          await db.run('UPDATE articles SET kindle_sent = 1 WHERE id = $1', [id]);
+          console.log(`📬 Envoyé au Kindle : ${kindleEmail}`);
+        } catch (mailErr) {
+          console.error(`⚠️ Génération OK mais envoi Kindle échoué : ${mailErr.message}`);
+        }
       }
     }
 
@@ -306,6 +311,10 @@ router.get('/:id/download', authMiddleware, async (req, res) => {
     let filePath, ext;
 
     if (formatDemande === 'kepub') {
+      const pro = await isPro(req.userId);
+      if (!pro) {
+        return res.status(403).json({ error: 'Abonnement Pro requis', code: 'PRO_REQUIRED' });
+      }
       filePath = await convertToKepub(article.epub_path);
       ext      = 'kepub.epub';
     } else {

@@ -82,42 +82,14 @@ router.get('/', authMiddleware, async (req, res) => {
 });
 
 // ── POST /api/subscription ────────────────────────────────────────
-// Pour les futurs paiements — met à jour le plan en base
-router.post('/', authMiddleware, async (req, res) => {
-  const { plan, billing } = req.body;
-
-  const VALID_PLANS    = ['free', 'pro'];
-  const VALID_BILLINGS = ['monthly', 'annual', null];
-
-  if (!VALID_PLANS.includes(plan)) {
-    return res.status(400).json({ error: `Plan invalide. Valeurs : ${VALID_PLANS.join(', ')}` });
-  }
-
-  if (billing !== undefined && !VALID_BILLINGS.includes(billing)) {
-    return res.status(400).json({ error: `Billing invalide. Valeurs : monthly, annual` });
-  }
-
-  try {
-    const isPaid       = plan !== 'free';
-    const subscribedAt = isPaid ? new Date().toISOString() : null;
-    const billingValue = isPaid ? (billing || 'monthly') : null;
-
-    await db.run(
-      `UPDATE users SET plan = $1, billing = $2, subscribed_at = $3, trial_end = NULL WHERE id = $4`,
-      [plan, billingValue, subscribedAt, req.userId]
-    );
-
-    // Downgrade vers free : supprimer les articles de plus de 7 jours immédiatement
-    if (plan === 'free') {
-      await deleteExpiredArticlesForUser(req.userId, 'free');
-    }
-
-    const sub = await getEffectiveSubscription(req.userId);
-    res.json(sub);
-  } catch (err) {
-    console.error('Erreur POST subscription:', err);
-    res.status(500).json({ error: 'Erreur serveur' });
-  }
+// Désactivée : le plan est mis à jour exclusivement via les webhooks Stripe
+// (checkout.session.completed, customer.subscription.updated, customer.subscription.deleted).
+// Laisser cette route ouverte permettrait à n'importe quel utilisateur authentifié
+// de s'upgrader en Pro sans paiement.
+router.post('/', authMiddleware, (req, res) => {
+  res.status(403).json({
+    error: 'Cette route est désactivée. Le plan est mis à jour automatiquement via Stripe.',
+  });
 });
 
 module.exports = router;

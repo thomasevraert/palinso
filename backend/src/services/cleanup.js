@@ -1,5 +1,6 @@
-const db   = require('../db');
-const fs   = require('fs');
+const db         = require('../db');
+const fs         = require('fs');
+const { isPro }  = require('../middleware/requirePro');
 
 // Durée de rétention en jours par plan
 const RETENTION_DAYS = {
@@ -47,14 +48,13 @@ async function deleteExpiredArticlesForUser(userId, plan) {
 // Parcourt tous les utilisateurs et supprime leurs articles expirés.
 // Appelé au démarrage du serveur et toutes les 6 heures.
 async function runGlobalCleanup() {
-  const { getEffectiveSubscription } = require('../routes/subscription');
   try {
     const users = await db.all(`SELECT id FROM users`);
     let total   = 0;
 
     for (const user of users) {
-      const sub  = await getEffectiveSubscription(user.id);
-      const plan = sub ? sub.plan : 'free';
+      const pro  = await isPro(user.id);
+      const plan = pro ? 'pro' : 'free';
       total += await deleteExpiredArticlesForUser(user.id, plan);
     }
 
