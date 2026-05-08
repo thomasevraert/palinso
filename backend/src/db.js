@@ -62,6 +62,25 @@ if (process.env.DATABASE_URL) {
     user_id    TEXT NOT NULL,
     created_at TIMESTAMPTZ DEFAULT NOW()
   );
+
+  CREATE TABLE IF NOT EXISTS password_reset_tokens (
+    id          TEXT PRIMARY KEY,
+    user_id     TEXT NOT NULL REFERENCES users(id),
+    token_hash  TEXT NOT NULL,
+    token_type  VARCHAR(10) NOT NULL,
+    expires_at  TIMESTAMPTZ NOT NULL,
+    used_at     TIMESTAMPTZ,
+    created_at  TIMESTAMPTZ DEFAULT NOW()
+  );
+
+  CREATE TABLE IF NOT EXISTS email_verification_tokens (
+    id          TEXT PRIMARY KEY,
+    user_id     TEXT NOT NULL REFERENCES users(id),
+    token_hash  TEXT NOT NULL,
+    expires_at  TIMESTAMPTZ NOT NULL,
+    used_at     TIMESTAMPTZ,
+    created_at  TIMESTAMPTZ DEFAULT NOW()
+  );
 `).then(() => {
   // Migrations pour les tables existantes
   const migrations = [
@@ -70,6 +89,10 @@ if (process.env.DATABASE_URL) {
     `ALTER TABLE users ADD COLUMN IF NOT EXISTS subscribed_at TIMESTAMPTZ DEFAULT NULL`,
     `ALTER TABLE users ADD COLUMN IF NOT EXISTS trial_end TIMESTAMPTZ DEFAULT NULL`,
     `ALTER TABLE users ADD COLUMN IF NOT EXISTS articles_generated INTEGER DEFAULT 0`,
+    `ALTER TABLE users ADD COLUMN IF NOT EXISTS auth_provider VARCHAR(10) DEFAULT 'local'`,
+    `ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified BOOLEAN DEFAULT FALSE`,
+    `ALTER TABLE users ADD COLUMN IF NOT EXISTS google_id TEXT DEFAULT NULL`,
+    `ALTER TABLE users ADD COLUMN IF NOT EXISTS first_name TEXT DEFAULT NULL`,
   ];
   return Promise.all(migrations.map(sql => pool.query(sql)));
 }).catch(err => console.error('Erreur init DB PostgreSQL:', err));
@@ -137,6 +160,25 @@ if (process.env.DATABASE_URL) {
       user_id    TEXT NOT NULL,
       created_at TEXT DEFAULT (datetime('now'))
     );
+
+    CREATE TABLE IF NOT EXISTS password_reset_tokens (
+      id          TEXT PRIMARY KEY,
+      user_id     TEXT NOT NULL REFERENCES users(id),
+      token_hash  TEXT NOT NULL,
+      token_type  TEXT NOT NULL,
+      expires_at  TEXT NOT NULL,
+      used_at     TEXT,
+      created_at  TEXT DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS email_verification_tokens (
+      id          TEXT PRIMARY KEY,
+      user_id     TEXT NOT NULL REFERENCES users(id),
+      token_hash  TEXT NOT NULL,
+      expires_at  TEXT NOT NULL,
+      used_at     TEXT,
+      created_at  TEXT DEFAULT (datetime('now'))
+    );
   `);
 
   // Migrations pour les bases existantes
@@ -151,6 +193,10 @@ if (process.env.DATABASE_URL) {
     `ALTER TABLE users ADD COLUMN subscribed_at TEXT DEFAULT NULL`,
     `ALTER TABLE users ADD COLUMN trial_end TEXT DEFAULT NULL`,
     `ALTER TABLE users ADD COLUMN articles_generated INTEGER DEFAULT 0`,
+    `ALTER TABLE users ADD COLUMN auth_provider TEXT DEFAULT 'local'`,
+    `ALTER TABLE users ADD COLUMN email_verified INTEGER DEFAULT 0`,
+    `ALTER TABLE users ADD COLUMN google_id TEXT DEFAULT NULL`,
+    `ALTER TABLE users ADD COLUMN first_name TEXT DEFAULT NULL`,
   ];
   for (const sql of migrations) {
     try { sqlite.exec(sql); } catch { /* colonne déjà existante */ }
