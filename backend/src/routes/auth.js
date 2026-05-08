@@ -513,9 +513,10 @@ router.get('/reset-password-page', (req, res) => {
           return;
         }
 
-        form.style.display       = 'none';
-        okBox.textContent        = '✅ Mot de passe mis à jour ! Retournez sur l\\'extension Palinso.';
-        okBox.style.display      = 'block';
+        form.style.display  = 'none';
+        okBox.innerHTML     = '✅ Mot de passe mis à jour avec succès !<br>Vous pouvez retourner sur l\\'extension Palinso.<br>Fermeture automatique dans 3 secondes...';
+        okBox.style.display = 'block';
+        setTimeout(() => window.close(), 3000);
 
       } catch {
         showError('Impossible de joindre le serveur. Vérifiez votre connexion.');

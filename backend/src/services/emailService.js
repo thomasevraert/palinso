@@ -56,7 +56,7 @@ async function sendVerificationEmail(to, token, userName) {
   `;
 
   const { error } = await resend.emails.send({
-    from: process.env.RESEND_FROM_EMAIL,
+    from: 'Palinso <hello@palinso.app>',
     to,
     subject: 'Vérifiez votre adresse email – Palinso',
     html,
@@ -134,7 +134,7 @@ async function sendPasswordResetEmail(to, token, tokenType = 'reset') {
   `;
 
   const { error } = await resend.emails.send({
-    from: process.env.RESEND_FROM_EMAIL,
+    from: 'Palinso <hello@palinso.app>',
     to,
     subject,
     html,
