@@ -10,11 +10,15 @@ const crypto     = require('crypto');
 const express    = require('express');
 const bcrypt     = require('bcryptjs');
 const jwt        = require('jsonwebtoken');
+const Stripe     = require('stripe');
 const rateLimit  = require('express-rate-limit');
 const { v4: uuidv4 } = require('uuid');
-const db         = require('../db');
+const db             = require('../db');
+const authMiddleware = require('../middleware/auth');
 const { getEffectiveSubscription } = require('./subscription');
 const { sendVerificationEmail, sendPasswordResetEmail } = require('../services/emailService');
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 const forgotPasswordLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -660,6 +664,36 @@ router.get('/verify-email', async (req, res) => {
   } catch (err) {
     console.error('Erreur verify-email:', err);
     return res.status(500).set('Content-Type', 'text/html').send(htmlError('❌ Lien invalide ou expiré.'));
+  }
+});
+
+// ── DELETE /api/auth/account ─────────────────────────────────────
+router.delete('/account', authMiddleware, async (req, res) => {
+  try {
+    const user = await db.get(
+      'SELECT stripe_subscription_id, subscription_status FROM users WHERE id = $1',
+      [req.userId]
+    );
+
+    if (!user) {
+      return res.status(404).json({ error: 'Utilisateur introuvable' });
+    }
+
+    if (user.stripe_subscription_id && ['active', 'past_due'].includes(user.subscription_status)) {
+      try {
+        await stripe.subscriptions.cancel(user.stripe_subscription_id);
+      } catch (stripeErr) {
+        console.error('Erreur annulation Stripe (non bloquante):', stripeErr.message);
+      }
+    }
+
+    await db.run('DELETE FROM articles WHERE user_id = $1', [req.userId]);
+    await db.run('DELETE FROM users WHERE id = $1', [req.userId]);
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Erreur delete account:', err);
+    res.status(500).json({ error: 'Erreur serveur' });
   }
 });
 

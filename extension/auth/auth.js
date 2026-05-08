@@ -42,6 +42,23 @@ function openDashboard() {
   window.close();
 }
 
+// ── Case CGU ─────────────────────────────────────────────────────
+document.getElementById('terms-agree').addEventListener('change', (e) => {
+  const btn = document.getElementById('btn-signup');
+  btn.disabled = !e.target.checked;
+  btn.classList.toggle('terms-gate', !e.target.checked);
+});
+
+document.getElementById('link-cgu').addEventListener('click', (e) => {
+  e.preventDefault();
+  chrome.tabs.create({ url: 'https://palinso.app/terms.html' });
+});
+
+document.getElementById('link-privacy').addEventListener('click', (e) => {
+  e.preventDefault();
+  chrome.tabs.create({ url: 'https://palinso.app/privacy.html' });
+});
+
 // ── Inscription ──────────────────────────────────────────────────
 document.getElementById('btn-signup').addEventListener('click', async () => {
   hideError('signup-error');

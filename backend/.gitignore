@@ -4,3 +4,4 @@ data.sqlite
 epubs/
 *.db
 .DS_Store
+claude.md

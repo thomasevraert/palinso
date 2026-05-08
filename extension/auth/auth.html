@@ -212,6 +212,51 @@
     .btn:hover::after { background: rgba(255,255,255,0.08); }
     .btn:active { transform: translateY(1px); }
     .btn:disabled { background: var(--mist); cursor: not-allowed; }
+    .btn.terms-gate:disabled { background: var(--navy); opacity: 0.5; }
+
+    .terms-check {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      margin-top: 4px;
+      margin-bottom: 4px;
+    }
+
+    .terms-check input[type="checkbox"] {
+      width: auto;
+      padding: 0;
+      border: 1.5px solid #b8b5a0;
+      border-radius: 3px;
+      background: #fafaf5;
+      box-shadow: none;
+      margin-top: 2px;
+      flex-shrink: 0;
+      accent-color: var(--navy);
+      cursor: pointer;
+    }
+
+    .terms-check input[type="checkbox"]:focus {
+      border-color: var(--navy);
+      background: #fafaf5;
+      box-shadow: none;
+    }
+
+    .terms-label {
+      font-size: 12px;
+      font-weight: 400;
+      color: var(--mist);
+      text-transform: none;
+      letter-spacing: normal;
+      margin-bottom: 0;
+      line-height: 1.45;
+      cursor: pointer;
+    }
+
+    .terms-label a {
+      color: var(--teal);
+      text-decoration: underline;
+      text-decoration-style: dotted;
+    }
 
     .error {
       background: #fdf2f1;
@@ -289,7 +334,12 @@
         <input type="email" id="signup-kindle" placeholder="prenom_xxx@kindle.com" />
       </div>
 
-      <button class="btn" id="btn-signup">Créer mon compte →</button>
+      <div class="terms-check">
+        <input type="checkbox" id="terms-agree">
+        <label for="terms-agree" class="terms-label">J'accepte les <a href="#" id="link-cgu">CGU</a> et la <a href="#" id="link-privacy">Politique de confidentialité</a>. Je certifie avoir au moins 15 ans.</label>
+      </div>
+
+      <button class="btn terms-gate" id="btn-signup" disabled>Créer mon compte →</button>
       <hr class="divider" style="margin-top:20px; margin-bottom:0;">
       <p style="text-align:center; font-size:12px; color:var(--mist); margin: 10px 0 12px;">ou</p>
       <button class="btn btn-google" id="btn-google-signup">Créer un compte avec Google</button>

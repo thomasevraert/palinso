@@ -1085,6 +1085,34 @@ document.getElementById('gen-title').addEventListener('input', function() {
 document.getElementById('gen-submit-epub').addEventListener('click',  () => submitGeneration(false));
 document.getElementById('gen-submit-kindle').addEventListener('click', () => submitGeneration(true));
 
+// ── Suppression de compte ─────────────────────────────────────────
+document.getElementById('btn-delete-account').addEventListener('click', async () => {
+  const confirmed = confirm('Supprimer définitivement votre compte ? Toutes vos données et articles seront effacés. Cette action est irréversible.');
+  if (!confirmed) return;
+
+  const btn = document.getElementById('btn-delete-account');
+  btn.disabled = true;
+  btn.textContent = '⏳ Suppression...';
+
+  try {
+    const res = await apiFetch('/auth/account', { method: 'DELETE' });
+    if (!res.ok) {
+      const data = await res.json();
+      alert(data.error || 'Une erreur est survenue.');
+      btn.disabled = false;
+      btn.textContent = 'Supprimer mon compte';
+      return;
+    }
+    chrome.storage.local.clear(() => {
+      window.location.href = chrome.runtime.getURL('auth/auth.html');
+    });
+  } catch {
+    alert('Impossible de joindre le serveur. Vérifiez votre connexion.');
+    btn.disabled = false;
+    btn.textContent = 'Supprimer mon compte';
+  }
+});
+
 function statusLabel(status) {
   return { done: '✅ Prêt', processing: '⏳ En cours', error: '❌ Erreur', pending: '⏸ En attente' }[status] || status;
 }
