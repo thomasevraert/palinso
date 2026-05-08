@@ -74,9 +74,9 @@ router.post('/register', async (req, res) => {
       );
 
       await sendVerificationEmail(email.toLowerCase(), rawVerifToken, name || email.toLowerCase());
-    } catch (emailErr) {
-      console.error('Erreur envoi email vérification:', emailErr);
-    }
+   } catch (emailErr) {
+  console.error('Erreur envoi email vérification:', emailErr.message); // modifie cette ligne
+}
 
     const token        = jwt.sign({ userId: id, email: email.toLowerCase() }, JWT_SECRET, { expiresIn: JWT_EXPIRES });
     const subscription = await getEffectiveSubscription(id);
