@@ -52,6 +52,11 @@
       color: #a0b0bc;
       margin-top: 24px;
     }
+    .countdown {
+      font-size: 12px;
+      color: #a0b0bc;
+      margin-top: 8px;
+    }
   </style>
 </head>
 <body>
@@ -61,6 +66,16 @@
     <p>Ton abonnement Palinso Pro est maintenant actif.</p>
     <p>Tu peux fermer cet onglet et retourner sur l'extension.</p>
     <p class="note">Une confirmation t'a été envoyée par email.</p>
+    <p class="countdown" id="countdown">Fermeture automatique dans 3 secondes…</p>
   </div>
+  <script>
+    let s = 3;
+    const el = document.getElementById('countdown');
+    const interval = setInterval(() => {
+      s--;
+      if (s <= 0) { clearInterval(interval); window.close(); }
+      else el.textContent = `Fermeture automatique dans ${s} seconde${s > 1 ? 's' : ''}…`;
+    }, 1000);
+  </script>
 </body>
 </html>

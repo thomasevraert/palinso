@@ -57,10 +57,11 @@ chrome.storage.local.get(['token', 'name', 'email'], (result) => {
 
 // ── Messages depuis le popup ──────────────────────────────────────
 chrome.runtime.onMessage.addListener((message) => {
-  if (message.type === 'REFRESH_ARTICLES')  loadArticles();
-  if (message.type === 'OPEN_PROFILE')      switchTab('profile');
-  if (message.type === 'OPEN_SUBSCRIPTION') switchTab('subscription');
-  if (message.type === 'OPEN_GENERATION')   switchTab('generation');
+  if (message.type === 'REFRESH_ARTICLES')    loadArticles();
+  if (message.type === 'OPEN_PROFILE')        switchTab('profile');
+  if (message.type === 'OPEN_SUBSCRIPTION')   switchTab('subscription');
+  if (message.type === 'OPEN_GENERATION')     switchTab('generation');
+  if (message.type === 'SUBSCRIPTION_UPDATED') loadSubscription();
 });
 
 // ── Navigation ────────────────────────────────────────────────────
@@ -783,7 +784,7 @@ function setupSubscriptionActions(currentSub) {
           });
           const result = await response.json();
           chrome.tabs.create({ url: result.url });
-        } catch {
+        } catch { /* silencieux */ } finally {
           freshBtn.textContent = "S'abonner";
           freshBtn.disabled = false;
         }
