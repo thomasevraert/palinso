@@ -766,21 +766,27 @@ function setupSubscriptionActions(currentSub) {
       const billing = document.getElementById('billing-switch')?.checked ? 'annual' : 'monthly';
 
       if (plan === 'free') {
-        if (!confirm("Résilier votre abonnement ? Vous reviendrez sur l'offre gratuite.")) return;
-      }
-
-      try {
-        const response = await apiFetch('/subscription', {
-          method: 'POST',
-          body: JSON.stringify({ plan, billing: plan === 'free' ? null : billing }),
-        });
-        const newSub = await response.json();
-        chrome.storage.local.set({ subscription: newSub });
-        renderSubscriptionUI(newSub);
-        setupSubscriptionActions(newSub);
-        refreshQuota();
-      } catch (err) {
-        alert(`❌ Erreur : ${err.message}`);
+        try {
+          const response = await apiFetch('/stripe/create-portal-session', { method: 'POST' });
+          const result = await response.json();
+          chrome.tabs.create({ url: result.url });
+        } catch (err) {
+          alert(`❌ Erreur : ${err.message}`);
+        }
+      } else {
+        freshBtn.disabled = true;
+        freshBtn.textContent = '⏳ Chargement...';
+        try {
+          const response = await apiFetch('/stripe/create-checkout-session', {
+            method: 'POST',
+            body: JSON.stringify({ plan: billing }),
+          });
+          const result = await response.json();
+          chrome.tabs.create({ url: result.url });
+        } catch {
+          freshBtn.textContent = "S'abonner";
+          freshBtn.disabled = false;
+        }
       }
     });
   });
@@ -790,17 +796,10 @@ function setupSubscriptionActions(currentSub) {
   const freshCancel = btnCancel.cloneNode(true);
   btnCancel.parentNode.replaceChild(freshCancel, btnCancel);
   freshCancel.addEventListener('click', async () => {
-    if (!confirm("Résilier votre abonnement ? Vous conserverez l'accès jusqu'à la fin de la période en cours.")) return;
     try {
-      const response = await apiFetch('/subscription', {
-        method: 'POST',
-        body: JSON.stringify({ plan: 'free', billing: null }),
-      });
-      const newSub = await response.json();
-      chrome.storage.local.set({ subscription: newSub });
-      renderSubscriptionUI(newSub);
-      setupSubscriptionActions(newSub);
-      refreshQuota();
+      const response = await apiFetch('/stripe/create-portal-session', { method: 'POST' });
+      const result = await response.json();
+      chrome.tabs.create({ url: result.url });
     } catch (err) {
       alert(`❌ Erreur : ${err.message}`);
     }
