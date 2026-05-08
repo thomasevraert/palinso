@@ -37,6 +37,10 @@ async function sendVerificationEmail(to, token, userName) {
                   <p style="margin:16px 0 0;color:#5A7E8C;font-size:13px;font-family:Arial,sans-serif;line-height:1.6;">
                     Ce lien expire dans 24 heures.
                   </p>
+                  <p style="margin:24px 0 0;color:#5A7E8C;font-size:13px;font-family:Arial,sans-serif;line-height:1.6;">
+                    Si le bouton ne fonctionne pas, copiez ce lien dans votre navigateur :<br>
+                    <a href="${verificationUrl}" style="color:#034C8C;word-break:break-all;">${verificationUrl}</a>
+                  </p>
                 </td>
               </tr>
               <tr>
@@ -116,6 +120,10 @@ async function sendPasswordResetEmail(to, token, tokenType = 'reset') {
                   </table>
                   <p style="margin:16px 0 0;color:#5A7E8C;font-size:13px;font-family:Arial,sans-serif;line-height:1.6;">
                     ${subText}
+                  </p>
+                  <p style="margin:24px 0 0;color:#5A7E8C;font-size:13px;font-family:Arial,sans-serif;line-height:1.6;">
+                    Si le bouton ne fonctionne pas, copiez ce lien dans votre navigateur :<br>
+                    <a href="${resetUrl}" style="color:#034C8C;word-break:break-all;">${resetUrl}</a>
                   </p>
                 </td>
               </tr>
