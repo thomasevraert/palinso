@@ -164,7 +164,9 @@ async function webhookHandler(req, res) {
         const subscription = await stripe.subscriptions.retrieve(session.subscription);
         const priceId      = subscription.items.data[0].price.id;
         const billing      = getBillingFromPriceId(priceId);
-        const periodEnd    = new Date(subscription.current_period_end * 1000).toISOString();
+        const periodEnd    = subscription.current_period_end
+          ? new Date(subscription.current_period_end * 1000).toISOString()
+          : null;
         const now          = new Date().toISOString();
 
         await db.run(
@@ -215,7 +217,9 @@ async function webhookHandler(req, res) {
         const priceId   = sub.items.data[0].price.id;
         const billing   = getBillingFromPriceId(priceId);
         const plan      = ['active', 'trialing'].includes(sub.status) ? 'pro' : 'free';
-        const periodEnd = new Date(sub.current_period_end * 1000).toISOString();
+        const periodEnd = sub.current_period_end
+          ? new Date(sub.current_period_end * 1000).toISOString()
+          : null;
 
         await db.run(
           `UPDATE users SET
