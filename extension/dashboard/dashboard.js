@@ -64,6 +64,15 @@ chrome.runtime.onMessage.addListener((message) => {
   if (message.type === 'SUBSCRIPTION_UPDATED') loadSubscription();
 });
 
+// ── Rafraîchissement au retour sur la page ────────────────────────
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    const activeTab = document.querySelector('.nav-item.active')?.dataset?.tab;
+    if (activeTab === 'subscription') loadSubscription();
+    refreshQuota();
+  }
+});
+
 // ── Navigation ────────────────────────────────────────────────────
 function switchTab(tabName) {
   document.querySelectorAll('.nav-item').forEach(t => {
