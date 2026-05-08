@@ -143,6 +143,7 @@ function captureHtmlViaNewTab(url, resolve, reject) {
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   if (changeInfo.status === 'complete' && tab.url && tab.url.includes('payment-success.html')) {
     chrome.runtime.sendMessage({ type: 'SUBSCRIPTION_UPDATED' }).catch(() => {});
+    setTimeout(() => chrome.tabs.remove(tabId).catch(() => {}), 3000);
   }
 });
 
