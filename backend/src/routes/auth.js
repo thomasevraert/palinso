@@ -336,6 +336,201 @@ router.post('/reset-password', async (req, res) => {
   }
 });
 
+// ── GET /api/auth/reset-password-page ───────────────────────────
+router.get('/reset-password-page', (req, res) => {
+  const { token } = req.query;
+
+  const html = `<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Palinso – Nouveau mot de passe</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f5f5f0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .card {
+      background: #ffffff;
+      border-radius: 16px;
+      padding: 40px 36px;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: 0 2px 4px rgba(26,58,92,0.06), 0 12px 32px rgba(26,58,92,0.10);
+    }
+    .card::before {
+      content: '';
+      display: block;
+      height: 4px;
+      background: linear-gradient(90deg, #1a3a5c, #2e6da4);
+      border-radius: 4px 4px 0 0;
+      margin: -40px -36px 32px;
+      border-radius: 16px 16px 0 0;
+    }
+    h1 {
+      font-size: 22px;
+      font-weight: 700;
+      color: #1a3a5c;
+      margin-bottom: 6px;
+    }
+    .subtitle {
+      font-size: 14px;
+      color: #6b7f90;
+      margin-bottom: 28px;
+    }
+    label {
+      display: block;
+      font-size: 11px;
+      font-weight: 600;
+      color: #2e6da4;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 6px;
+    }
+    .form-group { margin-bottom: 18px; }
+    input {
+      width: 100%;
+      padding: 11px 14px;
+      border: 1.5px solid #dde4ea;
+      border-radius: 8px;
+      font-size: 14px;
+      font-family: inherit;
+      color: #0d1f2d;
+      background: #fafafa;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    input:focus {
+      border-color: #1a3a5c;
+      background: #fff;
+      box-shadow: 0 0 0 3px rgba(26,58,92,0.08);
+    }
+    input::placeholder { color: #b0bec5; }
+    .btn {
+      width: 100%;
+      padding: 13px;
+      background: #1a3a5c;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      margin-top: 8px;
+      transition: opacity 0.2s, transform 0.1s;
+    }
+    .btn:hover { opacity: 0.9; }
+    .btn:active { transform: translateY(1px); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .msg {
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 13px;
+      margin-bottom: 16px;
+      display: none;
+    }
+    .msg-error   { background: #fdf2f1; border: 1px solid #f0c5c1; color: #c0392b; }
+    .msg-success { background: #f0f7f0; border: 1px solid #b8ddb8; color: #1d6b1d; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Nouveau mot de passe</h1>
+    <p class="subtitle">Choisissez un mot de passe d'au moins 8 caractères.</p>
+
+    <div id="msg-error"   class="msg msg-error"></div>
+    <div id="msg-success" class="msg msg-success"></div>
+
+    <form id="reset-form">
+      <div class="form-group">
+        <label>Nouveau mot de passe</label>
+        <input type="password" id="new-password" placeholder="••••••••" autocomplete="new-password" />
+      </div>
+      <div class="form-group">
+        <label>Confirmer le mot de passe</label>
+        <input type="password" id="confirm-password" placeholder="••••••••" autocomplete="new-password" />
+      </div>
+      <button type="submit" class="btn" id="btn-submit">Définir le nouveau mot de passe</button>
+    </form>
+  </div>
+
+  <script>
+    const TOKEN = new URLSearchParams(window.location.search).get('token') || '';
+    const API   = '/api/auth/reset-password';
+
+    const form    = document.getElementById('reset-form');
+    const btn     = document.getElementById('btn-submit');
+    const errBox  = document.getElementById('msg-error');
+    const okBox   = document.getElementById('msg-success');
+
+    if (!TOKEN) {
+      form.style.display   = 'none';
+      errBox.textContent   = 'Lien invalide ou expiré. Veuillez faire une nouvelle demande.';
+      errBox.style.display = 'block';
+    }
+
+    function showError(msg) {
+      errBox.textContent   = msg;
+      errBox.style.display = 'block';
+      okBox.style.display  = 'none';
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      errBox.style.display = 'none';
+
+      const newPassword     = document.getElementById('new-password').value;
+      const confirmPassword = document.getElementById('confirm-password').value;
+
+      if (newPassword.length < 8) {
+        return showError('Le mot de passe doit faire au moins 8 caractères.');
+      }
+      if (newPassword !== confirmPassword) {
+        return showError('Les deux mots de passe ne correspondent pas.');
+      }
+
+      btn.disabled    = true;
+      btn.textContent = 'Enregistrement...';
+
+      try {
+        const res  = await fetch(API, {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({ token: TOKEN, newPassword }),
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+          showError(data.error || 'Une erreur est survenue.');
+          return;
+        }
+
+        form.style.display       = 'none';
+        okBox.textContent        = '✅ Mot de passe mis à jour ! Retournez sur l\\'extension Palinso.';
+        okBox.style.display      = 'block';
+
+      } catch {
+        showError('Impossible de joindre le serveur. Vérifiez votre connexion.');
+      } finally {
+        btn.disabled    = false;
+        btn.textContent = 'Définir le nouveau mot de passe';
+      }
+    });
+  </script>
+</body>
+</html>`;
+
+  res.set('Content-Type', 'text/html').send(html);
+});
+
 // ── GET /api/auth/me ─────────────────────────────────────────────
 router.get('/me', async (req, res) => {
   const authHeader = req.headers['authorization'];

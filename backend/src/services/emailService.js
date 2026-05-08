@@ -71,7 +71,7 @@ async function sendVerificationEmail(to, token, userName) {
 }
 
 async function sendPasswordResetEmail(to, token, tokenType = 'reset') {
-  const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${token}`;
+  const resetUrl = `${process.env.BACKEND_URL}/api/auth/reset-password-page?token=${token}`;
 
   const isSet = tokenType === 'set';
   const subject = isSet

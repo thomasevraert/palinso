@@ -160,3 +160,40 @@ document.getElementById('btn-google').addEventListener('click', () =>
 document.getElementById('btn-google-signup').addEventListener('click', () =>
   handleGoogleAuth('btn-google-signup', 'signup-error', 'Connexion en cours...', 'Créer un compte avec Google')
 );
+
+// ── Mot de passe oublié ──────────────────────────────────────────
+document.getElementById('link-forgot-password').addEventListener('click', (e) => {
+  e.preventDefault();
+  document.getElementById('view-login').classList.remove('active');
+  document.getElementById('view-forgot').classList.add('active');
+});
+
+document.getElementById('link-back-to-login').addEventListener('click', (e) => {
+  e.preventDefault();
+  document.getElementById('view-forgot').classList.remove('active');
+  document.getElementById('view-login').classList.add('active');
+});
+
+document.getElementById('btn-forgot').addEventListener('click', async () => {
+  document.getElementById('forgot-error').style.display = 'none';
+  document.getElementById('forgot-success').style.display = 'none';
+
+  const email = document.getElementById('forgot-email').value.trim();
+  const btn = document.getElementById('btn-forgot');
+  btn.disabled    = true;
+  btn.textContent = 'Envoi en cours...';
+
+  try {
+    await fetch(`${API_BASE}/auth/forgot-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+    showSuccess('forgot-success', 'Si cet email existe, un lien a été envoyé. Vérifiez vos spams.');
+  } catch {
+    showError('forgot-error', 'Une erreur est survenue, réessayez.');
+  } finally {
+    btn.disabled    = false;
+    btn.textContent = 'Envoyer le lien →';
+  }
+});
