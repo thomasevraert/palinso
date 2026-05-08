@@ -687,6 +687,9 @@ router.delete('/account', authMiddleware, async (req, res) => {
       }
     }
 
+    await db.run('DELETE FROM email_verification_tokens WHERE user_id = $1', [req.userId]);
+    await db.run('DELETE FROM password_reset_tokens WHERE user_id = $1', [req.userId]);
+    await db.run('DELETE FROM article_quota_log WHERE user_id = $1', [req.userId]);
     await db.run('DELETE FROM articles WHERE user_id = $1', [req.userId]);
     await db.run('DELETE FROM users WHERE id = $1', [req.userId]);
 
