@@ -225,4 +225,138 @@ async function sendPasswordResetEmail(to, token, tokenType = 'reset') {
   return { success: true };
 }
 
-module.exports = { sendVerificationEmail, sendPasswordResetEmail };
+async function sendWelcomeEmail(to, userName) {
+  const html = `
+    <!DOCTYPE html>
+    <html lang="fr">
+    <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+    <body style="margin:0;padding:0;background:#F2F1DF;font-family:Arial,sans-serif;">
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#F2F1DF;padding:32px 20px 40px;">
+        <tr>
+          <td align="center">
+
+            <!-- Card -->
+            <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;max-width:600px;border-radius:8px;">
+
+              <!-- Header -->
+              <tr>
+                <td style="background:#034C8C;padding:32px 40px;border-radius:8px 8px 0 0;">
+                  <p style="margin:0 0 4px;color:#ffffff;font-size:26px;font-family:Georgia,serif;font-style:italic;">Palinso</p>
+                  <p style="margin:0;color:#819FA6;font-size:13px;font-family:Arial,sans-serif;">Lisez le web sur votre liseuse</p>
+                </td>
+              </tr>
+
+              <!-- Body -->
+              <tr>
+                <td style="padding:40px;">
+
+                  <!-- Greeting -->
+                  <p style="margin:0 0 8px;font-size:16px;color:#1a1a1a;font-family:Arial,sans-serif;">Bonjour ${userName},</p>
+                  <p style="margin:0 0 32px;font-size:15px;color:#555555;font-family:Arial,sans-serif;line-height:1.6;">Bienvenue sur Palinso — votre essai Pro de 7 jours commence maintenant.</p>
+
+                  <!-- Comment ça marche -->
+                  <h2 style="margin:0 0 16px;font-size:18px;color:#034C8C;font-family:Georgia,serif;">Comment ça marche</h2>
+                  <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:32px;">
+                    <tr>
+                      <td align="center" valign="top" style="padding:0 8px 0 0;">
+                        <p style="margin:0 0 4px;font-size:12px;font-weight:bold;color:#034C8C;font-family:Arial,sans-serif;text-transform:uppercase;letter-spacing:0.05em;">Étape 1</p>
+                        <p style="margin:0 0 4px;font-size:14px;font-weight:bold;color:#1a1a1a;font-family:Arial,sans-serif;">Trouvez un article</p>
+                        <p style="margin:0;font-size:13px;color:#555555;font-family:Arial,sans-serif;line-height:1.5;">sur Medium, Substack, la presse...</p>
+                      </td>
+                      <td align="center" valign="middle" style="padding:0 8px;font-size:20px;color:#A68A56;font-family:Arial,sans-serif;white-space:nowrap;">→</td>
+                      <td align="center" valign="top" style="padding:0 8px;">
+                        <p style="margin:0 0 4px;font-size:12px;font-weight:bold;color:#034C8C;font-family:Arial,sans-serif;text-transform:uppercase;letter-spacing:0.05em;">Étape 2</p>
+                        <p style="margin:0 0 4px;font-size:14px;font-weight:bold;color:#1a1a1a;font-family:Arial,sans-serif;">Cliquez sur Palinso</p>
+                        <p style="margin:0;font-size:13px;color:#555555;font-family:Arial,sans-serif;line-height:1.5;">choisissez EPUB, KEPUB ou Kindle</p>
+                      </td>
+                      <td align="center" valign="middle" style="padding:0 8px;font-size:20px;color:#A68A56;font-family:Arial,sans-serif;white-space:nowrap;">→</td>
+                      <td align="center" valign="top" style="padding:0 0 0 8px;">
+                        <p style="margin:0 0 4px;font-size:12px;font-weight:bold;color:#034C8C;font-family:Arial,sans-serif;text-transform:uppercase;letter-spacing:0.05em;">Étape 3</p>
+                        <p style="margin:0 0 4px;font-size:14px;font-weight:bold;color:#1a1a1a;font-family:Arial,sans-serif;">Lisez sur votre liseuse</p>
+                        <p style="margin:0;font-size:13px;color:#555555;font-family:Arial,sans-serif;line-height:1.5;">le fichier est prêt en quelques secondes</p>
+                      </td>
+                    </tr>
+                  </table>
+
+                  <!-- Ce que vous pouvez faire -->
+                  <h2 style="margin:0 0 12px;font-size:18px;color:#034C8C;font-family:Georgia,serif;">Ce que vous pouvez faire</h2>
+                  <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:32px;">
+                    <tr><td style="padding:5px 0;font-size:14px;color:#1a1a1a;font-family:Arial,sans-serif;">&#10003; Conversions illimitées pendant 7 jours</td></tr>
+                    <tr><td style="padding:5px 0;font-size:14px;color:#1a1a1a;font-family:Arial,sans-serif;">&#10003; EPUB3, KEPUB et envoi direct Kindle</td></tr>
+                    <tr><td style="padding:5px 0;font-size:14px;color:#1a1a1a;font-family:Arial,sans-serif;">&#10003; Stockage de vos articles convertis</td></tr>
+                    <tr><td style="padding:5px 0;font-size:14px;color:#1a1a1a;font-family:Arial,sans-serif;">&#10003; Dashboard pour retrouver vos fichiers</td></tr>
+                  </table>
+
+                  <!-- Comparatif des offres -->
+                  <h2 style="margin:0 0 16px;font-size:18px;color:#034C8C;font-family:Georgia,serif;">Nos offres</h2>
+                  <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
+                    <tr>
+                      <td width="48%" valign="top" style="background:#F2F1DF;border:1px solid #E8E6CE;border-radius:8px;padding:20px;">
+                        <p style="margin:0 0 12px;font-size:15px;font-weight:bold;color:#034C8C;font-family:Georgia,serif;">Gratuit — 0€/mois</p>
+                        <p style="margin:0 0 6px;font-size:13px;color:#555555;font-family:Arial,sans-serif;">3 conversions / mois</p>
+                        <p style="margin:0 0 6px;font-size:13px;color:#555555;font-family:Arial,sans-serif;">Formats EPUB3, KEPUB, Kindle</p>
+                        <p style="margin:0;font-size:13px;color:#555555;font-family:Arial,sans-serif;">Stockage 7 jours</p>
+                      </td>
+                      <td width="4%"></td>
+                      <td width="48%" valign="top" style="background:#034C8C;border-radius:8px;padding:20px;">
+                        <p style="margin:0 0 4px;font-size:15px;font-weight:bold;color:#ffffff;font-family:Georgia,serif;">Pro — 4,99€/mois</p>
+                        <p style="margin:0 0 12px;font-size:12px;color:#819FA6;font-family:Arial,sans-serif;">ou 3,99€/mois (annuel)</p>
+                        <p style="margin:0 0 6px;font-size:13px;color:#ffffff;font-family:Arial,sans-serif;">Conversions illimitées</p>
+                        <p style="margin:0 0 6px;font-size:13px;color:#ffffff;font-family:Arial,sans-serif;">Tous formats simultanés</p>
+                        <p style="margin:0 0 6px;font-size:13px;color:#ffffff;font-family:Arial,sans-serif;">Stockage 1 an</p>
+                        <p style="margin:0 0 6px;font-size:13px;color:#ffffff;font-family:Arial,sans-serif;">Envoi Kindle automatique</p>
+                        <p style="margin:0;font-size:13px;color:#ffffff;font-family:Arial,sans-serif;">Support prioritaire</p>
+                      </td>
+                    </tr>
+                  </table>
+
+                  <!-- CTA -->
+                  <table cellpadding="0" cellspacing="0" width="100%" style="margin-bottom:32px;">
+                    <tr>
+                      <td align="center" style="background:#A68A56;border-radius:8px;">
+                        <a href="https://palinso.app/#tarifs" style="display:block;padding:16px 32px;color:#ffffff;font-size:16px;font-weight:bold;font-family:Arial,sans-serif;text-decoration:none;text-align:center;">
+                          Découvrir l'offre Pro →
+                        </a>
+                      </td>
+                    </tr>
+                  </table>
+
+                  <!-- Closing -->
+                  <p style="margin:0 0 8px;font-size:14px;color:#555555;font-family:Arial,sans-serif;">Des questions ? Répondez directement à cet email.</p>
+                  <p style="margin:0;font-size:14px;color:#555555;font-family:Arial,sans-serif;">— Thomas de Palinso</p>
+
+                </td>
+              </tr>
+
+              <!-- Footer -->
+              <tr>
+                <td align="center" style="padding:24px 40px;border-top:1px solid #F2F1DF;">
+                  <p style="margin:0;color:#5A7E8C;font-size:12px;font-family:Arial,sans-serif;text-align:center;">© Palinso — palinso.app</p>
+                </td>
+              </tr>
+
+            </table>
+
+          </td>
+        </tr>
+      </table>
+    </body>
+    </html>
+  `;
+
+  const { error } = await resend.emails.send({
+    from: 'Thomas de Palinso <hello@palinso.app>',
+    to,
+    subject: 'Bienvenue sur Palinso — votre essai Pro commence maintenant',
+    html,
+  });
+
+  if (error) {
+    console.error('[emailService] sendWelcomeEmail failed:', error);
+    throw new Error(`Échec de l'envoi du welcome email : ${error.message}`);
+  }
+
+  return { success: true };
+}
+
+module.exports = { sendVerificationEmail, sendPasswordResetEmail, sendWelcomeEmail };

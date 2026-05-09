@@ -16,7 +16,7 @@ const { v4: uuidv4 } = require('uuid');
 const db             = require('../db');
 const authMiddleware = require('../middleware/auth');
 const { getEffectiveSubscription } = require('./subscription');
-const { sendVerificationEmail, sendPasswordResetEmail } = require('../services/emailService');
+const { sendVerificationEmail, sendPasswordResetEmail, sendWelcomeEmail } = require('../services/emailService');
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
@@ -79,8 +79,16 @@ router.post('/register', async (req, res) => {
 
       await sendVerificationEmail(email.toLowerCase(), rawVerifToken, name || email.toLowerCase());
    } catch (emailErr) {
-  console.error('Erreur envoi email vérification:', emailErr.message); // modifie cette ligne
+  console.error('Erreur envoi email vérification:', emailErr.message);
 }
+
+    setTimeout(async () => {
+      try {
+        await sendWelcomeEmail(email.toLowerCase(), name || email.toLowerCase());
+      } catch (err) {
+        console.error('Erreur envoi welcome email:', err);
+      }
+    }, 15 * 60 * 1000);
 
     const token        = jwt.sign({ userId: id, email: email.toLowerCase() }, JWT_SECRET, { expiresIn: JWT_EXPIRES });
     const subscription = await getEffectiveSubscription(id);
