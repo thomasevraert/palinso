@@ -33,7 +33,13 @@ function extractHTML() {
     '[class*="paywall"]', '[class*="banner"]',
     '[class*="sidebar"]', '[class*="related"]',
     '[class*="cookie"]', '[class*="ad-"]', '[class*="-ad"]',
-    '[class*="social"]', '[class*="share"]'
+    '[class*="social"]', '[class*="share"]',
+    '[id*="paywall"]', '[id*="overlay"]', '[id*="subscribe"]',
+    '[id*="subscription"]', '[id*="gate"]', '[id*="modal"]', '[id*="wall"]',
+    '[class*="overlay"]', '[class*="gate"]', '[class*="modal"]',
+    '[class*="popup"]', '[class*="metered"]', '[class*="wall"]',
+    '.tp-backdrop', '.tp-modal', '.tp-container',
+    '[class*="piano"]'
   ].forEach(selector => {
     documentClone.querySelectorAll(selector).forEach(el => el.remove());
   });
@@ -50,23 +56,31 @@ function extractHTML() {
       return {
         html: bestEl.innerHTML,
         title: document.querySelector('h1')?.innerText || document.title,
+        partial: true,
       };
     }
   }
 
   if (!article || article.content.length < 500) return null;
 
-  return {
+  const extracted = {
     html: article.content,
     title: article.title,
   };
+  if (article.content.length < 1000) extracted.partial = true;
+  return extracted;
 }
 
 // Écoute le message venant du popup
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'GET_PAGE_HTML') {
-    const result = extractHTML();
-    sendResponse(result);
+    if (document.readyState === 'complete') {
+      setTimeout(() => sendResponse(extractHTML()), 500);
+    } else {
+      window.addEventListener('load', () => {
+        setTimeout(() => sendResponse(extractHTML()), 500);
+      }, { once: true });
+    }
   }
   return true;
 });

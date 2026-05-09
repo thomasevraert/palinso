@@ -237,6 +237,14 @@ async function openGenerationView(kindleMode) {
     let pageData = null;
     try { pageData = await chrome.tabs.sendMessage(tab.id, { type: 'GET_PAGE_HTML' }); } catch (e) {}
 
+    if (pageData === null) {
+      showStatus('⚠️ Extraction échouée — le site bloque peut-être l\'accès au contenu.', 'error');
+      await new Promise(resolve => setTimeout(resolve, 2000));
+    } else if (pageData.partial === true) {
+      showStatus('⚠️ Extraction partielle — l\'article semble incomplet. Le site utilise peut-être un paywall.', 'warning');
+      await new Promise(resolve => setTimeout(resolve, 2000));
+    }
+
     const payload = {
       url:        tab.url,
       html:       pageData ? pageData.html : null,
@@ -244,6 +252,7 @@ async function openGenerationView(kindleMode) {
       title:      customTitleInput.value.trim() || tab.title || '',
       category:   customCategoryInput.value.trim() || null,
       kindleMode: kindleMode,
+      partial:    pageData?.partial || false,
     };
 
     // Écriture en storage d'abord — le dashboard y réagit via storage.onChanged

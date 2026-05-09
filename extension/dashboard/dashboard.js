@@ -901,6 +901,9 @@ async function startExtraction() {
 
     renderGenPreview();
 
+    document.getElementById('gen-partial-warning').style.display =
+      (genPayload.partial === true || (genExtracted.content_html || '').length < 800) ? 'block' : 'none';
+
     genState = 'preview';
     document.getElementById('gen-loading').style.display = 'none';
     document.getElementById('gen-content').style.display = 'grid';

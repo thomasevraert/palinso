@@ -1302,6 +1302,18 @@
     .gen-preview-body::-webkit-scrollbar-track { background: transparent; }
     .gen-preview-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 
+    /* Bandeau extraction partielle */
+    #gen-partial-warning {
+      background: rgba(166,138,86,0.12);
+      border: 1px solid rgba(166,138,86,0.35);
+      color: var(--ink);
+      border-radius: 10px;
+      padding: 12px 16px;
+      grid-column: 1 / -1;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
     /* ── Bannière vérification email ── */
     #email-verification-banner {
       display: none;
@@ -1632,6 +1644,8 @@
 
         <!-- Contenu principal -->
         <div id="gen-content" class="gen-layout" style="display:none">
+
+          <div id="gen-partial-warning" style="display:none">⚠️ <strong>Extraction potentiellement incomplète</strong> — Le contenu récupéré semble partiel. Ce site utilise peut-être un paywall. Vérifiez l'aperçu avant de générer.</div>
 
           <!-- Panneau gauche : paramètres -->
           <div class="gen-controls-panel">
