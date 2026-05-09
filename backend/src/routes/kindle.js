@@ -13,6 +13,7 @@ const express        = require('express');
 const router         = express.Router();
 const db             = require('../db');
 const { sendToKindle } = require('../services/mailer');
+const { generateEpub } = require('../services/epub');
 const fs             = require('fs');
 const authMiddleware = require('../middleware/auth');
 const requirePro     = require('../middleware/requirePro');
@@ -40,7 +41,15 @@ router.post('/send', authMiddleware, requirePro, async (req, res) => {
     }
 
     if (!article.epub_path || !fs.existsSync(article.epub_path)) {
-      return res.status(404).json({ error: 'Fichier EPUB introuvable' });
+      if (!article.content_html) {
+        return res.status(404).json({ error: 'Fichier EPUB introuvable et contenu source absent' });
+      }
+      const newPath = await generateEpub(
+        { title: article.title, author: article.author, content: article.content_html },
+        article.id
+      );
+      await db.run('UPDATE articles SET epub_path = $1 WHERE id = $2', [newPath, article.id]);
+      article.epub_path = newPath;
     }
 
     await sendToKindle(article.epub_path, kindleEmail, article.title);
