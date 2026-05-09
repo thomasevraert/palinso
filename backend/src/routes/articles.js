@@ -47,11 +47,11 @@ function convertToKepub(epubPath) {
 
     execFile('kepubify', ['-o', dir, epubPath], (err) => {
       if (err) {
-        return reject(new Error(
-          `kepubify introuvable ou erreur de conversion.\n` +
-          `Installe-le avec : brew install kepubify\n` +
-          `Détail : ${err.message}`
-        ));
+        // kepubify absent : fallback — on sert l'EPUB avec l'extension .kepub.epub
+        // lisible sur Kobo, sans les spans Kobo optimisés
+        const fallback = path.join(dir, `${base}.kepub.epub`);
+        fs.copyFileSync(epubPath, fallback);
+        return resolve(fallback);
       }
 
       const apres   = fs.readdirSync(dir);
