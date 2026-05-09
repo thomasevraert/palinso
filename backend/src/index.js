@@ -1,4 +1,11 @@
 require('dotenv').config();
+const Sentry = require('@sentry/node');
+Sentry.init({
+  dsn: process.env.SENTRY_DSN,
+  enabled: !!process.env.SENTRY_DSN,
+  environment: process.env.NODE_ENV || 'production',
+});
+
 const express = require('express');
 const cors    = require('cors');
 const { runGlobalCleanup } = require('./services/cleanup');
@@ -26,6 +33,8 @@ app.use('/api/stripe',       require('./routes/stripe'));
 app.get('/health', (req, res) => {
   res.json({ ok: true, message: 'Serveur KTool Clone opérationnel' });
 });
+
+Sentry.setupExpressErrorHandler(app);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

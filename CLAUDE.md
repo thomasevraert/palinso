@@ -127,6 +127,7 @@ Transactional emails (verification, password reset) use **Resend** (`resend` npm
 | `RESEND_API_KEY` | Resend transactional email |
 | `BACKEND_URL` | Public URL used in email links (e.g. `https://palinso-production.up.railway.app`) |
 | `SMTP_HOST/PORT/USER/PASS/FROM` | Kindle delivery SMTP credentials |
+| `SENTRY_DSN` | Sentry error monitoring DSN — optional, silent in dev if absent |
 
 ## Extension Development
 
