@@ -1,2 +1,8 @@
 [phases.setup]
-nixPkgs = ["pandoc", "kepubify"]
+nixPkgs = ["pandoc", "go"]
+
+[phases.install]
+cmds = [
+  "GOPATH=/usr/local go install github.com/pgaskin/kepubify/v4/cmd/kepubify@latest",
+  "npm ci"
+]
