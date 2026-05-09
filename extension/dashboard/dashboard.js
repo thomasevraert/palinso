@@ -82,6 +82,7 @@ function switchTab(tabName) {
   document.getElementById('view-profile').classList.toggle('active',      tabName === 'profile');
   document.getElementById('view-subscription').classList.toggle('active', tabName === 'subscription');
   document.getElementById('view-generation').classList.toggle('active',   tabName === 'generation');
+  document.getElementById('view-faq').classList.toggle('active',          tabName === 'faq');
 
   if (tabName === 'profile')      loadProfile();
   if (tabName === 'subscription') loadSubscription();
@@ -247,6 +248,10 @@ function startEmailVerifPolling() {
 function stopEmailVerifPolling() {
   if (emailVerifPolling) { clearInterval(emailVerifPolling); emailVerifPolling = null; }
 }
+
+document.getElementById('btn-close-kindle-setup-modal').addEventListener('click', () => {
+  document.getElementById('kindle-setup-modal').classList.remove('open');
+});
 
 document.getElementById('btn-close-verified-modal').addEventListener('click', () => {
   document.getElementById('email-verified-modal').classList.remove('open');
@@ -472,6 +477,10 @@ async function saveProfile() {
     feedback.style.display = 'block';
     return;
   }
+
+  const prev = await new Promise(r => chrome.storage.local.get('kindleEmail', r));
+  const prevKindle = prev.kindleEmail || '';
+
   chrome.storage.local.set({ name: newName, kindleEmail: kindleEmail || null }, () => {
     const userEl = document.getElementById('dashboard-user');
     if (userEl) userEl.textContent = newName;
@@ -479,6 +488,10 @@ async function saveProfile() {
     feedback.className     = 'profile-feedback success';
     feedback.style.display = 'block';
     setTimeout(() => { feedback.style.display = 'none'; }, 3000);
+
+    if (kindleEmail && kindleEmail !== prevKindle) {
+      document.getElementById('kindle-setup-modal').classList.add('open');
+    }
   });
 }
 
@@ -1126,6 +1139,16 @@ document.getElementById('btn-delete-account').addEventListener('click', async ()
     btn.disabled = false;
     btn.textContent = 'Supprimer mon compte';
   }
+});
+
+// ── FAQ Accordéon ─────────────────────────────────────────────────
+document.getElementById('view-faq').addEventListener('click', (e) => {
+  const btn = e.target.closest('.faq-question');
+  if (!btn) return;
+  const isOpen   = btn.getAttribute('aria-expanded') === 'true';
+  const answer   = btn.nextElementSibling;
+  btn.setAttribute('aria-expanded', String(!isOpen));
+  answer.classList.toggle('open', !isOpen);
 });
 
 function statusLabel(status) {

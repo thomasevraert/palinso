@@ -149,8 +149,8 @@
     }
 
     /* ── Vues ── */
-    #view-articles, #view-profile, #view-subscription { display: none; }
-    #view-articles.active, #view-profile.active, #view-subscription.active { display: block; }
+    #view-articles, #view-profile, #view-subscription, #view-faq { display: none; }
+    #view-articles.active, #view-profile.active, #view-subscription.active, #view-faq.active { display: block; }
 
     /* ── Toolbar ── */
     .toolbar {
@@ -475,6 +475,7 @@
 
     /* ── Modal Kindle ── */
     #kindle-missing-modal,
+    #kindle-setup-modal,
     #pro-modal {
       display: none;
       position: fixed; inset: 0;
@@ -486,6 +487,7 @@
     }
 
     #kindle-missing-modal.open { display: flex; }
+    #kindle-setup-modal.open   { display: flex; }
     #pro-modal.open            { display: flex; }
 
     .modal-box {
@@ -820,6 +822,83 @@
 
     .plan-features li:last-child { border-bottom: none; }
     .plan-features li.disabled { color: var(--mist); text-decoration: line-through; opacity: 0.5; }
+
+    /* ── FAQ Accordéon ── */
+    #view-faq { max-width: 720px; }
+
+    .faq-section-title {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--teal);
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      margin: 28px 0 10px;
+    }
+
+    .faq-section-title:first-child { margin-top: 0; }
+
+    .faq-item {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      margin-bottom: 6px;
+      overflow: hidden;
+      background: var(--white);
+    }
+
+    .faq-question {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px 18px;
+      background: none;
+      border: none;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--ink);
+      text-align: left;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .faq-question:hover { background: #fafaf5; }
+
+    .faq-question[aria-expanded="true"] { background: #f7f6ed; }
+
+    .faq-chevron {
+      flex-shrink: 0;
+      font-size: 12px;
+      color: var(--mist);
+      transition: transform 0.2s;
+    }
+
+    .faq-question[aria-expanded="true"] .faq-chevron {
+      transform: rotate(180deg);
+    }
+
+    .faq-answer {
+      display: none;
+      padding: 0 18px 16px;
+      font-size: 13px;
+      color: var(--teal);
+      line-height: 1.7;
+      border-top: 1px solid #f0eedf;
+    }
+
+    .faq-answer.open { display: block; }
+
+    .faq-answer strong { color: var(--ink); }
+
+    .faq-answer code {
+      background: #f0eedf;
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 12px;
+      color: var(--ink);
+    }
 
     /* ── Barre de quota ── */
     .quota-bar {
@@ -1380,6 +1459,9 @@
         <div class="nav-item" data-tab="subscription">
           <span class="nav-icon">⭐</span> Abonnement
         </div>
+        <div class="nav-item" data-tab="faq">
+          <span class="nav-icon">💬</span> FAQ
+        </div>
       </nav>
 
       <div class="sidebar-user">
@@ -1617,6 +1699,137 @@
         </div>
       </div>
 
+      <!-- Vue : FAQ -->
+      <div id="view-faq">
+        <h1 class="page-title">Questions fréquentes</h1>
+
+        <p class="faq-section-title">Conversion d'articles</p>
+
+        <div class="faq-item">
+          <button class="faq-question" aria-expanded="false">
+            Quels formats de fichiers sont disponibles ?
+            <span class="faq-chevron">▼</span>
+          </button>
+          <div class="faq-answer">
+            Trois formats sont pris en charge : <strong>EPUB3</strong> (universel, compatible avec la majorité des liseuses et applications de lecture), <strong>KEPUB</strong> (optimisé pour les liseuses Kobo), et <strong>FB2</strong> (format populaire sur les liseuses russes). <br><br>
+            EPUB3 est disponible sur l'offre Gratuite. KEPUB et FB2 nécessitent un abonnement <strong>Pro</strong>.
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-question" aria-expanded="false">
+            Certains articles s'extraient mal ou sont incomplets. Pourquoi ?
+            <span class="faq-chevron">▼</span>
+          </button>
+          <div class="faq-answer">
+            Certains sites utilisent un <strong>paywall</strong> ou chargent leur contenu via JavaScript après la page initiale. Dans ce cas, l'extension peut ne capturer qu'un aperçu limité de l'article.<br><br>
+            Un avertissement « Extraction potentiellement incomplète » s'affiche dans ce cas. Vérifiez toujours l'aperçu avant de lancer la génération.
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-question" aria-expanded="false">
+            Comment utiliser l'extension pour convertir un article ?
+            <span class="faq-chevron">▼</span>
+          </button>
+          <div class="faq-answer">
+            1. Naviguez sur la page de l'article à lire.<br>
+            2. Cliquez sur l'icône Palinso dans la barre d'extensions Chrome.<br>
+            3. Choisissez votre format et vos options, puis cliquez sur <strong>Convertir</strong>.<br>
+            4. Le dashboard s'ouvre automatiquement avec un aperçu. Vous pouvez ajuster le titre, la catégorie et le format avant de générer le fichier.
+          </div>
+        </div>
+
+        <p class="faq-section-title">Kindle</p>
+
+        <div class="faq-item">
+          <button class="faq-question" aria-expanded="false">
+            Comment envoyer un article directement sur mon Kindle ?
+            <span class="faq-chevron">▼</span>
+          </button>
+          <div class="faq-answer">
+            L'envoi Kindle est une fonctionnalité <strong>Pro</strong>. Pour l'activer :<br><br>
+            1. Renseignez votre adresse Kindle (ex. <code>prenom_xxx@kindle.com</code>) dans votre <strong>Profil</strong>.<br>
+            2. Autorisez l'adresse <code>kindle@palinso.app</code> dans votre compte Amazon : <em>amazon.fr → Compte → Appareils et contenu → Paramètres → Documents personnels</em>.<br><br>
+            Amazon convertit automatiquement les fichiers EPUB reçus pour votre liseuse.
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-question" aria-expanded="false">
+            Je n'ai pas reçu l'article sur ma Kindle. Que faire ?
+            <span class="faq-chevron">▼</span>
+          </button>
+          <div class="faq-answer">
+            Vérifiez que :<br>
+            • L'adresse <code>kindle@palinso.app</code> est bien dans la liste des expéditeurs approuvés sur Amazon.<br>
+            • L'adresse Kindle renseignée dans votre profil est correcte (elle se termine par <code>@kindle.com</code>).<br>
+            • Votre liseuse est connectée au Wi-Fi pour recevoir le document.<br><br>
+            La livraison Amazon peut parfois prendre quelques minutes.
+          </div>
+        </div>
+
+        <p class="faq-section-title">Plans et quota</p>
+
+        <div class="faq-item">
+          <button class="faq-question" aria-expanded="false">
+            Quelle est la différence entre le plan Gratuit et le plan Pro ?
+            <span class="faq-chevron">▼</span>
+          </button>
+          <div class="faq-answer">
+            <strong>Gratuit :</strong> 3 conversions par mois, format EPUB3 uniquement, articles conservés pendant 7 jours.<br><br>
+            <strong>Pro :</strong> conversions illimitées, tous les formats (EPUB3, KEPUB, FB2), envoi direct sur Kindle, articles conservés pendant 1 an.
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-question" aria-expanded="false">
+            Mon quota mensuel se réinitialise-t-il ?
+            <span class="faq-chevron">▼</span>
+          </button>
+          <div class="faq-answer">
+            Oui. Le quota de <strong>3 articles/mois</strong> du plan Gratuit se remet à zéro au début de chaque mois calendaire. Les articles déjà générés restent accessibles pendant 7 jours.
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-question" aria-expanded="false">
+            Mes articles sont-ils supprimés automatiquement ?
+            <span class="faq-chevron">▼</span>
+          </button>
+          <div class="faq-answer">
+            Oui, une purge automatique s'effectue régulièrement :<br>
+            • <strong>Plan Gratuit :</strong> les articles sont supprimés après <strong>7 jours</strong>.<br>
+            • <strong>Plan Pro :</strong> les articles sont conservés pendant <strong>1 an</strong>.<br><br>
+            Pensez à télécharger vos fichiers avant expiration si vous êtes sur l'offre Gratuite.
+          </div>
+        </div>
+
+        <p class="faq-section-title">Compte et sécurité</p>
+
+        <div class="faq-item">
+          <button class="faq-question" aria-expanded="false">
+            Je n'arrive pas à me connecter. Que faire ?
+            <span class="faq-chevron">▼</span>
+          </button>
+          <div class="faq-answer">
+            Si vous avez créé un compte avec email/mot de passe, vérifiez que votre adresse email est bien vérifiée (un email de confirmation vous a été envoyé à l'inscription).<br><br>
+            En cas de mot de passe oublié, utilisez le lien <strong>Mot de passe oublié</strong> sur la page de connexion pour recevoir un lien de réinitialisation (valable 30 minutes).
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-question" aria-expanded="false">
+            Puis-je utiliser mon compte Google pour me connecter ?
+            <span class="faq-chevron">▼</span>
+          </button>
+          <div class="faq-answer">
+            Oui. Palinso prend en charge la connexion via <strong>Google</strong>. Cliquez sur <em>Continuer avec Google</em> sur la page de connexion — votre compte est créé automatiquement lors de la première connexion.
+          </div>
+        </div>
+
+      </div>
+
       <!-- Vue : Génération -->
       <div id="view-generation">
 
@@ -1742,6 +1955,18 @@
       <div class="modal-actions">
         <button class="modal-btn modal-btn-cancel" id="kindle-modal-cancel">Fermer</button>
         <button class="modal-btn modal-btn-primary" id="kindle-modal-go-profile">Aller au profil →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal configuration Kindle -->
+  <div id="kindle-setup-modal">
+    <div class="modal-box">
+      <h3>Activation de l'envoi Kindle</h3>
+      <p>Pour recevoir vos articles, vous devez autoriser l'adresse <strong style="color:var(--ink)">kindle@palinso.app</strong> dans votre compte Amazon.</p>
+      <p style="font-size:12px;margin-top:-10px;line-height:1.6;">Rendez-vous sur <strong>amazon.fr → Compte → Appareils et contenu → Paramètres → Documents personnels</strong>, puis ajoutez cette adresse dans la liste des expéditeurs approuvés.</p>
+      <div class="modal-actions" style="justify-content:center;">
+        <button class="modal-btn modal-btn-primary" id="btn-close-kindle-setup-modal" style="flex:none;padding:11px 32px;">J'ai compris</button>
       </div>
     </div>
   </div>

@@ -4,6 +4,8 @@ const path = require('path');
 
 async function sendToKindle(epubPath, kindleEmail, articleTitle) {
   // Crée la connexion avec le serveur email
+  if (!process.env.SMTP_HOST) throw new Error('SMTP_HOST non configuré');
+
   const transporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST,
     port: parseInt(process.env.SMTP_PORT || '587'),
@@ -12,6 +14,9 @@ async function sendToKindle(epubPath, kindleEmail, articleTitle) {
       user: process.env.SMTP_USER,
       pass: process.env.SMTP_PASS,
     },
+    connectionTimeout: 10_000,
+    greetingTimeout:   10_000,
+    socketTimeout:     30_000,
   });
 
   await transporter.sendMail({
