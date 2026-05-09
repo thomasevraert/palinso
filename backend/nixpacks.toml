@@ -1,8 +1,8 @@
 [phases.setup]
-nixPkgs = ["pandoc", "go"]
+nixPkgs = ["pandoc", "curl"]
 
 [phases.install]
 cmds = [
-  "GOPATH=/usr/local go install github.com/pgaskin/kepubify/v4/cmd/kepubify@latest",
+  "curl -fsSL https://github.com/pgaskin/kepubify/releases/latest/download/kepubify-linux-64bit -o /usr/local/bin/kepubify && chmod +x /usr/local/bin/kepubify",
   "npm ci"
 ]
