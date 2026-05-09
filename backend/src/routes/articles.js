@@ -4,6 +4,7 @@ const { v4: uuidv4 } = require('uuid');
 const db            = require('../db');
 const { extractFromUrl, extractFromHtml } = require('../services/extractor');
 const { generateEpub }  = require('../services/epub');
+const { generateFb2 }   = require('../services/fb2');
 const { execFile }      = require('child_process');
 const fs   = require('fs');
 const path = require('path');
@@ -183,7 +184,7 @@ router.get('/', authMiddleware, async (req, res) => {
 router.post('/', authMiddleware, async (req, res) => {
   const { url, html, format = 'epub3', title: customTitle, category, kindleEmail, images = true } = req.body;
 
-  const VALID_FORMATS = ['epub3', 'kepub'];
+  const VALID_FORMATS = ['epub3', 'kepub', 'fb2'];
   if (!url) return res.status(400).json({ error: 'URL requise' });
   if (!VALID_FORMATS.includes(format)) {
     return res.status(400).json({ error: `Format invalide. Valeurs acceptées : ${VALID_FORMATS.join(', ')}` });
@@ -317,6 +318,16 @@ router.get('/:id/download', authMiddleware, async (req, res) => {
       }
       filePath = await convertToKepub(article.epub_path);
       ext      = 'kepub.epub';
+    } else if (formatDemande === 'fb2') {
+      const pro = await isPro(req.userId);
+      if (!pro) {
+        return res.status(403).json({ error: 'Abonnement Pro requis', code: 'PRO_REQUIRED' });
+      }
+      filePath = await generateFb2(
+        { title: article.title, author: article.author, content: article.content_html, siteName: null },
+        article.id
+      );
+      ext = 'fb2';
     } else {
       filePath = article.epub_path;
       ext      = 'epub';
@@ -327,7 +338,7 @@ router.get('/:id/download', authMiddleware, async (req, res) => {
       .replace(/\s+/g, '_')
       .substring(0, 60);
 
-    res.setHeader('Content-Type', 'application/epub+zip');
+    res.setHeader('Content-Type', ext === 'fb2' ? 'application/x-fictionbook+xml' : 'application/epub+zip');
     res.setHeader('Content-Disposition', `attachment; filename="${safeName}.${ext}"`);
     res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
     fs.createReadStream(filePath).pipe(res);

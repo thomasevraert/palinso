@@ -40,7 +40,7 @@ document.querySelectorAll('.format-pill').forEach(pill => {
     document.querySelectorAll('.format-pill').forEach(p => p.classList.remove('active'));
     pill.classList.add('active');
     selectedFormat = pill.dataset.format;
-    const labels = { epub3: 'Convertir en EPUB3', kepub: 'Convertir en KEPUB' };
+    const labels = { epub3: 'Convertir en EPUB3', kepub: 'Convertir en KEPUB', fb2: 'Convertir en FB2' };
     btnSend.textContent = '📤 ' + labels[selectedFormat];
   });
 });
@@ -275,6 +275,10 @@ btnSend.addEventListener('click', async function() {
   }
   if (selectedFormat === 'kepub' && await isFreePlan()) {
     showProModal('Le format KEPUB est réservé aux abonnés Pro. Passez à l\'offre Pro pour télécharger vos articles en KEPUB, optimisé pour les liseuses Kobo.');
+    return;
+  }
+  if (selectedFormat === 'fb2' && await isFreePlan()) {
+    showProModal('Le format FB2 est réservé aux abonnés Pro. Passez à l\'offre Pro pour télécharger vos articles en FB2.');
     return;
   }
   btnSend.disabled = true;

@@ -175,6 +175,10 @@ document.getElementById('articles-body').addEventListener('click', async (e) => 
       showProModal('Le téléchargement en KEPUB est réservé aux abonnés Pro. Passez à l\'offre Pro pour accéder à ce format, optimisé pour les liseuses Kobo.');
       return;
     }
+    if (format === 'fb2' && await getDashUserPlan() === 'free') {
+      showProModal('Le téléchargement en FB2 est réservé aux abonnés Pro. Passez à l\'offre Pro pour accéder à ce format.');
+      return;
+    }
     downloadArticle(articleId, format, btn);
   }
 });
@@ -373,7 +377,7 @@ function renderArticles() {
     return;
   }
 
-  const formatLabels = { epub3: 'EPUB3', kepub: 'KEPUB' };
+  const formatLabels = { epub3: 'EPUB3', kepub: 'KEPUB', fb2: 'FB2' };
 
   tbody.innerHTML = filtered.map(a => {
     const fmt      = a.format || 'epub3';
@@ -409,6 +413,7 @@ function renderArticles() {
               <select class="format-select">
                 <option value="epub3" ${fmt === 'epub3' ? 'selected' : ''}>EPUB3</option>
                 <option value="kepub" ${fmt === 'kepub'  ? 'selected' : ''}>KEPUB</option>
+                <option value="fb2"   ${fmt === 'fb2'   ? 'selected' : ''}>FB2</option>
               </select>
               <button class="btn-action" data-action="download" data-id="${a.id}">⬇ Télécharger</button>
             </div>
@@ -564,7 +569,7 @@ async function downloadArticle(articleId, format, btn) {
     }
     const disposition = response.headers.get('Content-Disposition') || '';
     const match       = disposition.match(/filename="?([^"]+)"?/);
-    const ext         = format === 'kepub' ? 'kepub.epub' : 'epub';
+    const ext         = format === 'kepub' ? 'kepub.epub' : format === 'fb2' ? 'fb2' : 'epub';
     const filename    = match ? match[1] : `article.${ext}`;
     const blob        = await response.blob();
     const blobUrl     = URL.createObjectURL(blob);
@@ -972,6 +977,10 @@ async function submitGeneration(kindleMode) {
 
   if (genFormat === 'kepub' && userPlan === 'free') {
     showProModal('Le format KEPUB est réservé aux abonnés Pro. Passez à l\'offre Pro pour télécharger vos articles en KEPUB, optimisé pour les liseuses Kobo.');
+    return;
+  }
+  if (genFormat === 'fb2' && userPlan === 'free') {
+    showProModal('Le format FB2 est réservé aux abonnés Pro. Passez à l\'offre Pro pour télécharger vos articles en FB2.');
     return;
   }
 
