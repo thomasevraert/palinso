@@ -34,10 +34,10 @@ Mets à jour CLAUDE.md **dans la même session** (pas après, pas "plus tard") d
 
 ## Project Overview
 
-**Palinso** is a Chrome extension (Manifest V3) paired with a Node.js/Express backend that converts web articles into EPUB/KEPUB files and sends them to Kindle. The project has two components:
+**Palinso** is a browser extension (Manifest V3, Chrome + Firefox) paired with a Node.js/Express backend that converts web articles into EPUB/KEPUB files and sends them to Kindle. The project has two components:
 
 - `backend/` — Express API deployed on Railway
-- `extension/` — Chrome extension (no build step, loaded directly in Chrome)
+- `extension/` — Chrome extension source (no build step, loaded directly in Chrome); Firefox build generated via `build-firefox.sh`
 
 ## Backend Commands
 
@@ -107,7 +107,7 @@ Free plan: 3 articles/month tracked via `article_quota_log` table (rolling calen
 ### Auth Flows
 
 - **Local**: email + bcrypt password, JWT (30-day expiry)
-- **Google OAuth**: handled in extension via `chrome.identity.getAuthToken`, access token validated server-side against `googleapis.com/oauth2/v3/userinfo`
+- **Google OAuth**: handled in `auth/googleAuth.js` via `chrome.identity.launchWebAuthFlow` (not `getAuthToken`) — reads `client_id` from the `oauth2` key in `manifest.json`, redirects via `chrome.identity.getRedirectURL()`, exchanges the access token server-side against `googleapis.com/oauth2/v3/userinfo`. **Not available on Firefox** (see Firefox Build section).
 - **Password reset tokens**: SHA-256 hashed in DB, 30-minute expiry, served via a server-rendered HTML page at `/api/auth/reset-password-page`
 - Google-only accounts get `token_type = 'set'` for password reset (sets a password rather than resetting one), toggling `auth_provider` to `'both'`
 
@@ -134,6 +134,35 @@ Transactional emails (verification, password reset) use **Resend** (`resend` npm
 The extension has no build step. Load `extension/` as an unpacked extension in Chrome (`chrome://extensions` → Developer mode → Load unpacked).
 
 To switch between local and production API, edit `API_BASE` at the top of `background.js` and `popup/popup.js` (two separate files, both need updating).
+
+## Extension Firefox Build
+
+```bash
+bash extension/build-firefox.sh
+# Produit : dist-firefox/  (chargeable dans about:debugging)
+#           firefox-extension.zip  (soumission addons.mozilla.org)
+```
+
+### Fichiers Firefox-specific (dans `extension/`)
+
+| Fichier | Rôle |
+|---|---|
+| `manifest.firefox.json` | Manifest source Firefox — contient `browser_specific_settings.gecko`, pas de clé `key` ni `oauth2` |
+| `lib/browser-polyfill.min.js` | Polyfill Mozilla (`webextension-polyfill` v0.12.0) — mappe `chrome.*` → `browser.*` |
+| `lib/firefox-google-shim.js` | Intercepte les boutons Google (auth.html) en phase capture pour afficher un message d'erreur au lieu de crasher |
+| `build-firefox.sh` | Script shell sans dépendances Node — copie + patch + ZIP |
+
+### Ce que le script fait aux copies dans `dist-firefox/`
+
+- Remplace `manifest.json` par `manifest.firefox.json`
+- Préfixe `background.js` avec `importScripts('./lib/browser-polyfill.min.js');`
+- Injecte `<script src="../lib/browser-polyfill.min.js">` avant le script principal dans `popup.html`, `dashboard.html`, `auth.html`
+- Injecte `firefox-google-shim.js` dans `auth.html` (après le polyfill, avant auth.js)
+- Ajoute un commentaire TODO dans `auth/googleAuth.js` au-dessus du code dépendant de la clé `oauth2`
+
+### Fonctionnalité non supportée sur Firefox
+
+**Authentification Google** — la clé `oauth2` du manifest est Chrome-specific. Sur Firefox, `chrome.runtime.getManifest().oauth2` retourne `undefined`. Le shim empêche le crash et affiche `"Google login non disponible sur Firefox."`. L'auth email/mot de passe fonctionne normalement.
 
 ## Production
 

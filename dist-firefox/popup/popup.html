@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --navy:  #034C8C;
+      --teal:  #5A7E8C;
+      --mist:  #819FA6;
+      --cream: #F2F1DF;
+      --gold:  #A68A56;
+      --white: #ffffff;
+      --ink:   #0d1f2d;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      width: 320px;
+      font-family: 'DM Sans', sans-serif;
+      background: var(--cream);
+      color: var(--ink);
+    }
+
+    /* ── Barre utilisateur ── */
+    #user-bar {
+      display: none;
+      background: var(--navy);
+      padding: 8px 14px;
+      font-size: 12px;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    #user-name { color: rgba(255,255,255,0.9); font-weight: 500; }
+
+    #btn-logout {
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.2);
+      color: rgba(255,255,255,0.85);
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-family: 'DM Sans', sans-serif;
+      transition: background 0.15s;
+    }
+
+    #btn-logout:hover { background: rgba(255,255,255,0.2); }
+
+    /* ── Header ── */
+    .header-band {
+      background: var(--navy);
+      padding: 16px 18px 18px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .header-band::after {
+      content: '';
+      position: absolute;
+      bottom: 0; right: -20px;
+      width: 100px; height: 100px;
+      background: rgba(255,255,255,0.04);
+      border-radius: 50%;
+    }
+
+    .header-top {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .header-logo {
+      width: 28px; height: 28px;
+      background: rgba(255,255,255,0.15);
+      border-radius: 7px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px;
+    }
+
+    .header-name {
+      font-family: 'Playfair Display', serif;
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--white);
+      letter-spacing: -0.2px;
+    }
+
+    .page-url {
+      font-size: 11px;
+      color: rgba(255,255,255,0.55);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* ── Corps ── */
+    .main { padding: 16px; }
+
+    /* ── Statut — en haut pour visibilité ── */
+    #status {
+      margin-bottom: 12px;
+      padding: 9px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      display: none;
+      line-height: 1.4;
+    }
+
+    .status-success { background: #ecf5ec; color: #1d5e1d; border: 1px solid #b8d8b8; }
+    .status-error   { background: #fdf2f1; color: #8b2020; border: 1px solid #f0c5c1; }
+    .status-info    { background: #eaf0f7; color: #034C8C; border: 1px solid #b8cedf; }
+
+    /* ── Bandeau plan / essai ── */
+    #plan-banner {
+      display: none;
+      margin-bottom: 12px;
+      border-radius: 9px;
+      padding: 9px 12px;
+      font-size: 11px;
+      font-weight: 500;
+      line-height: 1.4;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    #plan-banner.trial {
+      background: linear-gradient(135deg, rgba(3,76,140,0.08), rgba(90,126,140,0.10));
+      border: 1px solid rgba(3,76,140,0.18);
+      color: var(--navy);
+    }
+
+    #plan-banner.active-plan {
+      background: rgba(166,138,86,0.09);
+      border: 1px solid rgba(166,138,86,0.25);
+      color: #6b5a2e;
+    }
+
+    #plan-banner.trial-urgent {
+      background: rgba(192,57,43,0.07);
+      border: 1px solid rgba(192,57,43,0.2);
+      color: #8b2020;
+    }
+
+    .plan-banner-icon { font-size: 14px; flex-shrink: 0; }
+    .plan-banner-text { flex: 1; }
+    .plan-banner-text strong { font-weight: 700; }
+
+    /* ── Champs ── */
+    .field-group { margin-bottom: 11px; }
+
+    .field-group label {
+      display: block;
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--teal);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 4px;
+    }
+
+    .field-group input {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1.5px solid #dddbc9;
+      border-radius: 8px;
+      font-size: 13px;
+      font-family: 'DM Sans', sans-serif;
+      color: var(--ink);
+      background: var(--white);
+      outline: none;
+      transition: all 0.15s;
+    }
+
+    .field-group input:focus {
+      border-color: var(--navy);
+      box-shadow: 0 0 0 3px rgba(3,76,140,0.08);
+    }
+
+    .field-group input::placeholder { color: #aaa899; }
+
+    /* ── Format ── */
+    .format-section { margin-bottom: 13px; }
+
+    .section-label {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--teal);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 6px;
+      display: block;
+    }
+
+    .format-pills { display: flex; gap: 6px; }
+
+    .format-pill {
+      flex: 1;
+      padding: 8px 0;
+      border: 1.5px solid #dddbc9;
+      border-radius: 8px;
+      background: var(--white);
+      font-size: 12px;
+      font-weight: 600;
+      font-family: 'DM Sans', sans-serif;
+      color: var(--mist);
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.15s;
+    }
+
+    .format-pill:hover { border-color: var(--teal); color: var(--teal); }
+
+    .format-pill.active {
+      border-color: var(--navy);
+      background: var(--navy);
+      color: var(--white);
+    }
+
+    .format-pill .format-desc {
+      display: block;
+      font-size: 9px;
+      font-weight: 400;
+      opacity: 0.75;
+      margin-top: 1px;
+    }
+
+    /* ── Boutons ── */
+    .btn {
+      width: 100%;
+      padding: 11px;
+      border: none;
+      border-radius: 9px;
+      font-size: 13px;
+      font-weight: 600;
+      font-family: 'DM Sans', sans-serif;
+      cursor: pointer;
+      transition: all 0.15s;
+      margin-bottom: 7px;
+      letter-spacing: 0.01em;
+    }
+
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn:last-child { margin-bottom: 0; }
+
+    .btn-primary { background: var(--navy); color: var(--white); }
+    .btn-primary:hover:not(:disabled) { background: #023d72; }
+
+    .btn-kindle { background: var(--gold); color: var(--white); }
+    .btn-kindle:hover:not(:disabled) { background: #8e7447; }
+
+    .btn-secondary {
+      background: transparent;
+      color: var(--teal);
+      border: 1.5px solid #c5c3b0;
+    }
+    .btn-secondary:hover:not(:disabled) {
+      background: rgba(90,126,140,0.08);
+      border-color: var(--teal);
+    }
+
+    /* ── Notice abonné ── */
+    .notice-subscriber {
+      margin-top: 12px;
+      padding: 10px 12px;
+      background: rgba(166,138,86,0.08);
+      border-left: 3px solid var(--gold);
+      border-radius: 0 6px 6px 0;
+      font-size: 11px;
+      color: #6b5a3a;
+      line-height: 1.5;
+    }
+
+    /* ── Modal ── */
+    #kindle-modal, #quota-modal, #pro-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(3,31,45,0.55);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      backdrop-filter: blur(2px);
+    }
+
+    #kindle-modal.open, #quota-modal.open, #pro-modal.open { display: flex; }
+
+    .modal-box {
+      background: var(--white);
+      border-radius: 14px;
+      padding: 24px 20px 18px;
+      width: 100%;
+      box-shadow: 0 16px 48px rgba(3,31,45,0.2);
+      border-top: 3px solid var(--gold);
+    }
+
+    .modal-box h3 {
+      font-family: 'Playfair Display', serif;
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--ink);
+      margin-bottom: 8px;
+    }
+
+    .modal-box p {
+      font-size: 13px;
+      color: var(--teal);
+      line-height: 1.5;
+      margin-bottom: 18px;
+    }
+
+    .modal-actions { display: flex; gap: 8px; }
+
+    .modal-btn {
+      flex: 1; padding: 9px;
+      border: none; border-radius: 8px;
+      font-size: 13px; font-weight: 600;
+      font-family: 'DM Sans', sans-serif;
+      cursor: pointer; transition: all 0.15s;
+    }
+
+    .modal-btn-primary { background: var(--navy); color: var(--white); }
+    .modal-btn-primary:hover { background: #023d72; }
+    .modal-btn-cancel { background: var(--cream); color: var(--teal); border: 1px solid #c5c3b0; }
+    .modal-btn-cancel:hover { background: #e8e6d4; }
+  </style>
+</head>
+<body>
+
+  <!-- Barre utilisateur -->
+  <div id="user-bar">
+    <span id="user-name">👤</span>
+    <button id="btn-logout">Déconnexion</button>
+  </div>
+
+  <!-- Header coloré -->
+  <div class="header-band">
+    <div class="header-top">
+      <div class="header-logo">📚</div>
+      <span class="header-name">Palinso</span>
+    </div>
+    <div class="page-url" id="page-title">Chargement...</div>
+  </div>
+
+  <!-- Corps -->
+  <div class="main">
+
+    <!-- Statut en haut — visible sans scroller -->
+    <div id="status"></div>
+
+    <!-- Bandeau plan actuel / essai -->
+    <div id="plan-banner">
+      <span class="plan-banner-icon" id="plan-banner-icon"></span>
+      <span class="plan-banner-text" id="plan-banner-text"></span>
+    </div>
+
+    <div class="field-group">
+      <label>Titre</label>
+      <input type="text" id="custom-title" placeholder="Titre de l'article..." />
+    </div>
+
+    <div class="field-group">
+      <label>Catégorie</label>
+      <input type="text" id="custom-category" placeholder="Tech, Newsletter, Science…"
+        list="categories-list" autocomplete="off" />
+      <datalist id="categories-list"></datalist>
+    </div>
+
+    <div class="format-section">
+      <span class="section-label">Format de sortie</span>
+      <div class="format-pills">
+        <button class="format-pill active" data-format="epub3">
+          EPUB3
+          <span class="format-desc">Universel / Kindle</span>
+        </button>
+        <button class="format-pill" data-format="kepub">
+          KEPUB
+          <span class="format-desc">Kobo</span>
+        </button>
+        <button class="format-pill" data-format="fb2">
+          FB2
+          <span class="format-desc">FictionBook</span>
+        </button>
+      </div>
+    </div>
+
+    <button class="btn btn-primary" id="btn-send">📤 Convertir</button>
+    <button class="btn btn-kindle" id="btn-kindle">📬 Envoyer vers Kindle</button>
+    <button class="btn btn-secondary" id="btn-dashboard">📋 Voir mes articles</button>
+
+    <div class="notice-subscriber">
+      💡 Abonné à un site ? Si vous pouvez lire l'article, vous pouvez l'enregistrer sur votre liseuse.
+    </div>
+
+  </div>
+
+  <!-- Modal Kindle manquant -->
+  <div id="kindle-modal">
+    <div class="modal-box">
+      <h3>Adresse Kindle manquante</h3>
+      <p>Renseignez votre adresse Kindle dans votre profil pour envoyer directement sur votre liseuse.</p>
+      <div class="modal-actions">
+        <button class="modal-btn modal-btn-cancel" id="modal-cancel">Fermer</button>
+        <button class="modal-btn modal-btn-primary" id="modal-go-profile">Aller au profil</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal quota dépassé -->
+  <div id="quota-modal">
+    <div class="modal-box" style="border-top-color: #8b2020;">
+      <h3>Quota mensuel atteint</h3>
+      <p id="quota-modal-text">Vous avez atteint votre limite d'articles pour ce mois.</p>
+      <div class="modal-actions">
+        <button class="modal-btn modal-btn-cancel" id="quota-modal-cancel">Fermer</button>
+        <button class="modal-btn modal-btn-primary" id="quota-modal-upgrade">Voir les offres</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal offre Pro requise -->
+  <div id="pro-modal">
+    <div class="modal-box">
+      <h3>Fonctionnalité Pro</h3>
+      <p id="pro-modal-text"></p>
+      <div class="modal-actions">
+        <button class="modal-btn modal-btn-cancel" id="pro-modal-cancel">Fermer</button>
+        <button class="modal-btn modal-btn-primary" id="pro-modal-subscribe">Souscrire →</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../lib/browser-polyfill.min.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

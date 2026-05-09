@@ -1,0 +1,1988 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>Palinso — Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --navy:  #034C8C;
+      --teal:  #5A7E8C;
+      --mist:  #819FA6;
+      --cream: #F2F1DF;
+      --gold:  #A68A56;
+      --white: #ffffff;
+      --ink:   #0d1f2d;
+      --border: #dddbc9;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--cream);
+      color: var(--ink);
+      margin: 0;
+      min-height: 100vh;
+    }
+
+    /* ── Sidebar ── */
+    .layout { display: flex; min-height: 100vh; }
+
+    .sidebar {
+      width: 220px;
+      background: var(--navy);
+      display: flex;
+      flex-direction: column;
+      padding: 28px 0;
+      flex-shrink: 0;
+      position: fixed;
+      top: 0; left: 0; bottom: 0;
+    }
+
+    .sidebar-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 20px 28px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      margin-bottom: 20px;
+    }
+
+    .logo-icon {
+      width: 34px; height: 34px;
+      background: rgba(255,255,255,0.12);
+      border-radius: 9px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 17px;
+    }
+
+    .logo-text {
+      font-family: 'Playfair Display', serif;
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--white);
+    }
+
+    .nav-section {
+      padding: 0 12px;
+      flex: 1;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 9px;
+      font-size: 13px;
+      font-weight: 500;
+      color: rgba(255,255,255,0.6);
+      cursor: pointer;
+      transition: all 0.15s;
+      margin-bottom: 2px;
+    }
+
+    .nav-item:hover { color: rgba(255,255,255,0.9); background: rgba(255,255,255,0.06); }
+
+    .nav-item.active {
+      background: rgba(255,255,255,0.12);
+      color: var(--white);
+    }
+
+    .nav-item .nav-icon { font-size: 16px; }
+
+    .sidebar-user {
+      padding: 16px 20px;
+      border-top: 1px solid rgba(255,255,255,0.08);
+      margin-top: auto;
+    }
+
+    .user-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.9);
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+    .user-name:hover { color: var(--white); text-decoration: underline; }
+
+    .user-email {
+      font-size: 11px;
+      color: rgba(255,255,255,0.4);
+      margin-bottom: 10px;
+    }
+
+    #btn-logout-dashboard {
+      width: 100%;
+      padding: 7px 12px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.15);
+      color: rgba(255,255,255,0.7);
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      font-family: 'DM Sans', sans-serif;
+      cursor: pointer;
+      transition: all 0.15s;
+      text-align: left;
+    }
+
+    #btn-logout-dashboard:hover { background: rgba(255,255,255,0.15); color: white; }
+
+    /* ── Contenu principal ── */
+    .content {
+      margin-left: 220px;
+      flex: 1;
+      padding: 36px 40px;
+    }
+
+    .page-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 26px;
+      font-weight: 700;
+      color: var(--ink);
+      margin-bottom: 28px;
+    }
+
+    /* ── Vues ── */
+    #view-articles, #view-profile, #view-subscription, #view-faq { display: none; }
+    #view-articles.active, #view-profile.active, #view-subscription.active, #view-faq.active { display: block; }
+
+    /* ── Toolbar ── */
+    .toolbar {
+      display: flex; align-items: center;
+      gap: 10px; margin-bottom: 20px; flex-wrap: wrap;
+    }
+
+    .filter-label { font-size: 12px; font-weight: 600; color: var(--mist); }
+
+    #category-filters { display: flex; gap: 6px; flex-wrap: wrap; }
+
+    .filter-btn {
+      padding: 5px 14px;
+      border-radius: 20px;
+      border: 1.5px solid var(--border);
+      background: var(--white);
+      font-size: 12px;
+      font-weight: 500;
+      font-family: 'DM Sans', sans-serif;
+      cursor: pointer;
+      color: var(--teal);
+      transition: all 0.15s;
+    }
+
+    .filter-btn:hover { border-color: var(--teal); }
+    .filter-btn.active { background: var(--navy); color: var(--white); border-color: var(--navy); }
+
+    .refresh-btn {
+      margin-left: auto;
+      padding: 8px 16px;
+      background: var(--white);
+      color: var(--teal);
+      border: 1.5px solid var(--border);
+      border-radius: 9px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+      font-family: 'DM Sans', sans-serif;
+      transition: all 0.15s;
+    }
+
+    .refresh-btn:hover { border-color: var(--teal); }
+
+    #btn-delete-all {
+      display: none;
+      padding: 8px 16px;
+      background: #fdf2f1;
+      color: #8b2020;
+      border: 1.5px solid #f0c5c1;
+      border-radius: 9px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+      font-family: 'DM Sans', sans-serif;
+      transition: all 0.15s;
+    }
+
+    #btn-delete-all:hover { background: #fbe5e3; }
+
+    .count-info { font-size: 12px; color: var(--mist); margin-bottom: 14px; }
+
+    /* ── Table ── */
+    .card {
+      background: var(--white);
+      border-radius: 14px;
+      box-shadow: 0 1px 3px rgba(3,31,45,0.06), 0 4px 16px rgba(3,31,45,0.04);
+      overflow: hidden;
+      border: 1px solid rgba(3,76,140,0.06);
+    }
+
+    table { width: 100%; border-collapse: collapse; }
+
+    th {
+      background: #f7f6ed;
+      padding: 11px 16px;
+      text-align: left;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--teal);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      border-bottom: 1px solid var(--border);
+    }
+
+    td {
+      padding: 12px 16px;
+      border-bottom: 1px solid #f0eedf;
+      font-size: 13px;
+      vertical-align: middle;
+    }
+
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #fafaf3; }
+
+    .title-cell a {
+      color: var(--ink);
+      font-weight: 500;
+      text-decoration: none;
+      display: block;
+      max-width: 280px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .title-cell a:hover { color: var(--navy); text-decoration: underline; }
+    .error-tooltip { font-size: 11px; color: #8b2020; margin-top: 2px; }
+
+    /* ── Catégorie éditable ── */
+    .category-cell { min-width: 120px; }
+
+    .category-display {
+      display: flex; align-items: center; gap: 5px; cursor: pointer;
+    }
+
+    .category-tag {
+      display: inline-block;
+      padding: 2px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 500;
+      background: rgba(90,126,140,0.1);
+      color: var(--teal);
+    }
+
+    .category-tag.empty { color: var(--mist); background: none; font-style: italic; }
+
+    .category-edit-icon { font-size: 10px; color: var(--mist); opacity: 0; transition: opacity 0.15s; }
+    tr:hover .category-edit-icon { opacity: 1; }
+
+    .category-edit-form { display: none; gap: 4px; align-items: center; }
+    .category-edit-form.visible { display: flex; }
+
+    .category-input {
+      padding: 4px 8px;
+      border: 1.5px solid var(--navy);
+      border-radius: 6px;
+      font-size: 12px;
+      width: 110px;
+      outline: none;
+      font-family: 'DM Sans', sans-serif;
+    }
+
+    .category-save-btn {
+      padding: 4px 8px;
+      background: var(--navy);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .category-cancel-btn {
+      padding: 4px 6px;
+      background: var(--cream);
+      color: var(--teal);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    /* ── Badges format ── */
+    .badge-format {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+    }
+
+    .badge-format-epub3 { background: rgba(3,76,140,0.1); color: var(--navy); }
+    .badge-format-kepub { background: rgba(90,126,140,0.12); color: var(--teal); }
+    .badge-format-fb2   { background: rgba(166,138,86,0.1); color: var(--gold); }
+
+    /* ── Badges statut ── */
+    .badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .badge-done       { background: #edf7ed; color: #1d6b1d; }
+    .badge-processing { background: rgba(3,76,140,0.08); color: var(--navy); }
+    .badge-error      { background: #fdf2f1; color: #8b2020; }
+    .badge-pending    { background: #f7f6ed; color: var(--mist); }
+
+    /* ── Actions ── */
+    .actions { display: flex; gap: 5px; align-items: center; flex-wrap: wrap; }
+
+    .btn-action {
+      padding: 4px 10px;
+      border-radius: 6px;
+      border: 1.5px solid var(--border);
+      background: var(--white);
+      font-size: 11px;
+      font-weight: 500;
+      font-family: 'DM Sans', sans-serif;
+      cursor: pointer;
+      color: var(--teal);
+      white-space: nowrap;
+      transition: all 0.15s;
+    }
+
+    .btn-action:hover { border-color: var(--teal); }
+
+    .btn-delete { color: #8b2020; border-color: #f0c5c1; }
+    .btn-delete:hover { background: #fdf2f1; }
+
+    .btn-kindle-action { color: var(--gold); border-color: #d4b87c; }
+    .btn-kindle-action:hover { background: rgba(166,138,86,0.06); }
+
+    .download-group { display: flex; align-items: center; gap: 4px; }
+
+    .format-select {
+      padding: 4px 6px;
+      border: 1.5px solid var(--border);
+      border-radius: 6px;
+      font-size: 11px;
+      color: var(--teal);
+      background: var(--white);
+      font-family: 'DM Sans', sans-serif;
+      cursor: pointer;
+    }
+
+    #loading, #empty {
+      text-align: center;
+      padding: 56px;
+      color: var(--mist);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    /* ── Profil ── */
+    .profile-card {
+      background: var(--white);
+      border-radius: 14px;
+      box-shadow: 0 1px 3px rgba(3,31,45,0.06), 0 4px 16px rgba(3,31,45,0.04);
+      padding: 36px;
+      max-width: 480px;
+      border: 1px solid rgba(3,76,140,0.06);
+    }
+
+    .profile-card h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--ink);
+      margin-bottom: 28px;
+    }
+
+    .profile-field { margin-bottom: 22px; }
+
+    .profile-field label {
+      display: block;
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--teal);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 6px;
+    }
+
+    .profile-field .field-value {
+      font-size: 14px;
+      color: var(--ink);
+      padding: 9px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .profile-field input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1.5px solid var(--border);
+      border-radius: 9px;
+      font-size: 14px;
+      font-family: 'DM Sans', sans-serif;
+      color: var(--ink);
+      background: #fafaf5;
+      outline: none;
+      transition: all 0.15s;
+    }
+
+    .profile-field input:focus {
+      border-color: var(--navy);
+      background: var(--white);
+      box-shadow: 0 0 0 3px rgba(3,76,140,0.08);
+    }
+
+    .profile-field input::placeholder { color: #aaa899; }
+    .profile-field .field-hint { font-size: 11px; color: var(--mist); margin-top: 5px; }
+
+    .profile-save-btn {
+      padding: 11px 28px;
+      background: var(--navy);
+      color: var(--white);
+      border: none;
+      border-radius: 9px;
+      font-size: 14px;
+      font-weight: 600;
+      font-family: 'DM Sans', sans-serif;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .profile-save-btn:hover { background: #023d72; }
+
+    .profile-feedback {
+      margin-top: 14px;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      display: none;
+    }
+
+    .profile-feedback.success { background: #edf7ed; color: #1d6b1d; border: 1px solid #b8d8b8; }
+    .profile-feedback.error   { background: #fdf2f1; color: #8b2020; border: 1px solid #f0c5c1; }
+
+    /* ── Modal Kindle ── */
+    #kindle-missing-modal,
+    #kindle-setup-modal,
+    #pro-modal {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(3,31,45,0.5);
+      z-index: 100;
+      align-items: center; justify-content: center;
+      padding: 20px;
+      backdrop-filter: blur(3px);
+    }
+
+    #kindle-missing-modal.open { display: flex; }
+    #kindle-setup-modal.open   { display: flex; }
+    #pro-modal.open            { display: flex; }
+
+    .modal-box {
+      background: var(--white);
+      border-radius: 16px;
+      padding: 32px 28px 24px;
+      max-width: 400px; width: 100%;
+      box-shadow: 0 20px 60px rgba(3,31,45,0.18);
+      border-top: 4px solid var(--gold);
+    }
+
+    .modal-box h3 {
+      font-family: 'Playfair Display', serif;
+      font-size: 19px;
+      font-weight: 700;
+      color: var(--ink);
+      margin-bottom: 10px;
+    }
+
+    .modal-box p {
+      font-size: 14px;
+      color: var(--teal);
+      line-height: 1.6;
+      margin-bottom: 22px;
+    }
+
+    .modal-actions { display: flex; gap: 10px; }
+
+    .modal-btn {
+      flex: 1; padding: 11px;
+      border: none; border-radius: 9px;
+      font-size: 13px; font-weight: 600;
+      font-family: 'DM Sans', sans-serif;
+      cursor: pointer; transition: all 0.15s;
+    }
+
+    .modal-btn-primary { background: var(--navy); color: var(--white); }
+    .modal-btn-primary:hover { background: #023d72; }
+    .modal-btn-cancel { background: var(--cream); color: var(--teal); border: 1px solid var(--border); }
+    .modal-btn-cancel:hover { background: #e8e6d4; }
+    /* ── Abonnement ── */
+    #view-subscription { max-width: 900px; }
+
+    .current-plan-banner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: linear-gradient(135deg, var(--navy), var(--teal));
+      color: white;
+      border-radius: 12px;
+      padding: 14px 20px;
+      margin-bottom: 28px;
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .current-plan-banner button {
+      background: rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.3);
+      color: white;
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      transition: background 0.15s;
+    }
+
+    .current-plan-banner button:hover { background: rgba(255,255,255,0.25); }
+
+    /* Bandeau essai dans le dashboard */
+    .trial-dashboard-banner {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-radius: 12px;
+      padding: 14px 20px;
+      margin-bottom: 28px;
+      font-size: 14px;
+    }
+
+    .trial-dashboard-banner.trial {
+      background: linear-gradient(135deg, rgba(3,76,140,0.07), rgba(90,126,140,0.09));
+      border: 1px solid rgba(3,76,140,0.18);
+      color: var(--navy);
+    }
+
+    .trial-dashboard-banner.trial-urgent {
+      background: rgba(192,57,43,0.07);
+      border: 1px solid rgba(192,57,43,0.2);
+      color: #8b2020;
+    }
+
+    .trial-banner-icon { font-size: 22px; }
+    .trial-banner-body { flex: 1; }
+    .trial-banner-body strong { font-weight: 700; }
+    .trial-banner-body p { font-size: 12px; opacity: 0.75; margin-top: 2px; }
+    .trial-banner-cta {
+      padding: 7px 16px;
+      background: var(--navy);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      font-family: 'DM Sans', sans-serif;
+      cursor: pointer;
+    }
+    .trial-banner-cta:hover { background: #023d72; }
+
+    .billing-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 6px;
+    }
+
+    .billing-label {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--teal);
+      transition: color 0.15s;
+    }
+
+    .billing-label.active { color: var(--navy); font-weight: 700; }
+
+    .toggle-switch { position: relative; display: inline-block; cursor: pointer; }
+
+    .toggle-switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+
+    .toggle-track {
+      display: flex;
+      align-items: center;
+      width: 44px;
+      height: 24px;
+      background: var(--mist);
+      border-radius: 12px;
+      padding: 2px;
+      transition: background 0.2s;
+    }
+
+    .toggle-switch input:checked + .toggle-track { background: var(--navy); }
+
+    .toggle-thumb {
+      width: 20px;
+      height: 20px;
+      background: white;
+      border-radius: 50%;
+      transition: transform 0.2s;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+
+    .toggle-switch input:checked + .toggle-track .toggle-thumb { transform: translateX(20px); }
+
+    .saving-badge {
+      background: var(--gold);
+      color: white;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 9px;
+      border-radius: 20px;
+      letter-spacing: 0.02em;
+    }
+
+    .billing-hint { font-size: 12px; color: var(--mist); margin-bottom: 28px; text-align: center; }
+
+    .plans-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+      align-items: start;
+      max-width: 680px;
+      margin: 0 auto;
+    }
+
+    .format-badges {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin: 12px 0 4px;
+    }
+    .format-badge {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 20px;
+      background: #f0f0f0;
+      color: #999;
+      border: 1px solid #e0e0e0;
+    }
+    .format-badge.active {
+      background: #e6f4ea;
+      color: #2e7d32;
+      border-color: #a5d6a7;
+    }
+
+    .plan-card {
+      background: white;
+      border-radius: 16px;
+      padding: 26px 20px;
+      border: 2px solid var(--border);
+      position: relative;
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+
+    .plan-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(3,76,140,0.10);
+    }
+
+    .plan-card-featured {
+      border-color: var(--navy);
+      background: linear-gradient(160deg, #f8faff 0%, white 100%);
+      box-shadow: 0 4px 20px rgba(3,76,140,0.12);
+    }
+
+    .plan-popular-badge {
+      position: absolute;
+      top: -14px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--navy);
+      color: white;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 5px 14px;
+      border-radius: 20px;
+      white-space: nowrap;
+      font-family: 'DM Sans', sans-serif;
+    }
+
+    .plan-header { text-align: center; margin-bottom: 20px; padding-top: 8px; }
+
+    .plan-name {
+      font-family: 'Playfair Display', serif;
+      font-size: 19px;
+      font-weight: 700;
+      color: var(--ink);
+      margin-bottom: 12px;
+    }
+
+    .plan-price-wrap {
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      gap: 2px;
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+
+    .plan-currency { font-size: 16px; font-weight: 600; color: var(--ink); padding-bottom: 6px; }
+    .plan-price    { font-size: 46px; font-weight: 800; color: var(--ink); letter-spacing: -2px; }
+    .plan-per      { font-size: 13px; color: var(--mist); padding-bottom: 7px; }
+    .plan-price-free { font-size: 28px; font-weight: 800; color: var(--ink); padding: 12px 0 6px; }
+    .plan-price-old {
+      font-size: 18px; font-weight: 600; color: var(--mist);
+      text-decoration: line-through; text-align: center;
+      display: none; margin-bottom: 2px;
+    }
+    .plan-price-old.visible { display: block; }
+
+    .plan-billing-note {
+      font-size: 11px;
+      color: var(--mist);
+      min-height: 16px;
+    }
+
+    .plan-btn {
+      width: 100%;
+      padding: 11px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 700;
+      font-family: 'DM Sans', sans-serif;
+      cursor: pointer;
+      transition: all 0.15s;
+      margin-bottom: 6px;
+    }
+
+    .plan-btn-outline {
+      background: transparent;
+      border: 2px solid var(--navy);
+      color: var(--navy);
+    }
+
+    .plan-btn-outline:hover:not(:disabled) { background: var(--navy); color: white; }
+
+    .plan-btn-filled {
+      background: var(--navy);
+      border: 2px solid var(--navy);
+      color: white;
+    }
+
+    .plan-btn-filled:hover:not(:disabled) { background: #023d72; border-color: #023d72; }
+
+    .plan-btn-ghost {
+      background: transparent;
+      border: 2px solid var(--border);
+      color: var(--mist);
+    }
+
+    .plan-btn-ghost:hover:not(:disabled) { border-color: var(--teal); color: var(--teal); }
+
+    .plan-btn:disabled { opacity: 0.55; cursor: default; }
+
+    .plan-no-cc { text-align: center; font-size: 11px; color: var(--mist); margin-bottom: 16px; }
+
+    .plan-divider { border: none; border-top: 1px solid var(--border); margin-bottom: 14px; }
+
+    .plan-features-title {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--ink);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .plan-features { list-style: none; padding: 0; }
+
+    .plan-features li {
+      font-size: 12px;
+      color: var(--teal);
+      padding: 5px 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-bottom: 1px dashed rgba(90,126,140,0.15);
+    }
+
+    .plan-features li:last-child { border-bottom: none; }
+    .plan-features li.disabled { color: var(--mist); text-decoration: line-through; opacity: 0.5; }
+
+    /* ── FAQ Accordéon ── */
+    #view-faq { max-width: 720px; }
+
+    .faq-section-title {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--teal);
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      margin: 28px 0 10px;
+    }
+
+    .faq-section-title:first-child { margin-top: 0; }
+
+    .faq-item {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      margin-bottom: 6px;
+      overflow: hidden;
+      background: var(--white);
+    }
+
+    .faq-question {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px 18px;
+      background: none;
+      border: none;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--ink);
+      text-align: left;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .faq-question:hover { background: #fafaf5; }
+
+    .faq-question[aria-expanded="true"] { background: #f7f6ed; }
+
+    .faq-chevron {
+      flex-shrink: 0;
+      font-size: 12px;
+      color: var(--mist);
+      transition: transform 0.2s;
+    }
+
+    .faq-question[aria-expanded="true"] .faq-chevron {
+      transform: rotate(180deg);
+    }
+
+    .faq-answer {
+      display: none;
+      padding: 0 18px 16px;
+      font-size: 13px;
+      color: var(--teal);
+      line-height: 1.7;
+      border-top: 1px solid #f0eedf;
+    }
+
+    .faq-answer.open { display: block; }
+
+    .faq-answer strong { color: var(--ink); }
+
+    .faq-answer code {
+      background: #f0eedf;
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 12px;
+      color: var(--ink);
+    }
+
+    /* ── Barre de quota ── */
+    .quota-bar {
+      background: var(--white);
+      border-radius: 12px;
+      padding: 14px 18px;
+      margin-bottom: 18px;
+      border: 1px solid var(--border);
+      box-shadow: 0 1px 3px rgba(3,31,45,0.04);
+    }
+
+    .quota-bar-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+
+    .quota-bar-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--ink);
+    }
+
+    .quota-bar-plan {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--mist);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .quota-progress-track {
+      height: 6px;
+      background: #ece9d6;
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .quota-progress-fill {
+      height: 100%;
+      border-radius: 3px;
+      background: var(--navy);
+      transition: width 0.4s ease, background 0.3s;
+    }
+
+    .quota-progress-fill.warning { background: #c07a1a; }
+    .quota-progress-fill.danger  { background: #8b2020; }
+
+    .quota-upgrade-cta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 10px;
+      padding: 10px 14px;
+      background: rgba(192,122,26,0.07);
+      border: 1px solid rgba(192,122,26,0.22);
+      border-radius: 8px;
+      font-size: 12px;
+      color: #7a4e10;
+    }
+
+    .quota-upgrade-cta.danger {
+      background: rgba(139,32,32,0.06);
+      border-color: rgba(139,32,32,0.2);
+      color: #6b1616;
+    }
+
+    .quota-upgrade-btn {
+      flex-shrink: 0;
+      padding: 6px 14px;
+      background: var(--navy);
+      color: white;
+      border: none;
+      border-radius: 7px;
+      font-size: 11px;
+      font-weight: 700;
+      font-family: 'DM Sans', sans-serif;
+      cursor: pointer;
+      transition: background 0.15s;
+      white-space: nowrap;
+    }
+
+    .quota-upgrade-btn:hover { background: #023d72; }
+
+    /* ── Champ mot de passe avec bouton toggle ── */
+    .password-input-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .password-input-wrap input {
+      width: 100%;
+      padding-right: 40px;
+    }
+
+    .pwd-toggle {
+      position: absolute;
+      right: 10px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 14px;
+      color: var(--mist);
+      padding: 0;
+      line-height: 1;
+      opacity: 0.6;
+      transition: opacity 0.15s;
+    }
+
+    .pwd-toggle:hover { opacity: 1; }
+
+    /* ── Vue Génération ── */
+    #view-generation { display: none; }
+    #view-generation.active { display: block; }
+
+    .gen-pill-desc {
+      display: block;
+      font-size: 10px;
+      font-weight: 400;
+      opacity: 0.7;
+      margin-top: 2px;
+    }
+
+    .gen-topbar {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+
+    .gen-back-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 14px;
+      background: var(--white);
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      font-family: 'DM Sans', sans-serif;
+      color: var(--teal);
+      cursor: pointer;
+      transition: all 0.15s;
+      flex-shrink: 0;
+    }
+
+    .gen-back-btn:hover { border-color: var(--teal); color: var(--navy); }
+
+    .gen-topbar .page-title { margin: 0; font-size: 22px; }
+
+    /* Bandeau de chargement / erreur */
+    .gen-state {
+      text-align: center;
+      padding: 60px 40px;
+      color: var(--mist);
+      font-size: 14px;
+    }
+
+    .gen-state-icon { font-size: 36px; margin-bottom: 14px; }
+
+    .gen-error-box {
+      background: #fdf2f1;
+      border: 1px solid #f0c5c1;
+      border-radius: 12px;
+      padding: 24px 28px;
+      color: #8b2020;
+      font-size: 14px;
+      max-width: 500px;
+      margin: 0 auto;
+    }
+
+    .gen-error-box strong { display: block; font-size: 15px; margin-bottom: 8px; }
+
+    .gen-retry-btn {
+      margin-top: 14px;
+      padding: 8px 20px;
+      background: var(--navy);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      font-family: 'DM Sans', sans-serif;
+      cursor: pointer;
+    }
+
+    /* Layout 2 colonnes */
+    .gen-layout {
+      display: grid;
+      grid-template-columns: 300px 1fr;
+      gap: 24px;
+      align-items: start;
+    }
+
+    /* Panneau gauche : contrôles */
+    .gen-controls-panel {
+      background: var(--white);
+      border-radius: 14px;
+      border: 1px solid rgba(3,76,140,0.07);
+      box-shadow: 0 1px 3px rgba(3,31,45,0.06), 0 4px 16px rgba(3,31,45,0.04);
+      padding: 24px 20px;
+      position: sticky;
+      top: 24px;
+    }
+
+    .gen-section-title {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--teal);
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      margin-bottom: 14px;
+    }
+
+    .gen-field {
+      margin-bottom: 16px;
+    }
+
+    .gen-field label {
+      display: block;
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--teal);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 5px;
+    }
+
+    .gen-field input[type="text"] {
+      width: 100%;
+      padding: 9px 11px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-size: 13px;
+      font-family: 'DM Sans', sans-serif;
+      color: var(--ink);
+      background: #fafaf5;
+      outline: none;
+      transition: all 0.15s;
+    }
+
+    .gen-field input[type="text"]:focus {
+      border-color: var(--navy);
+      background: var(--white);
+      box-shadow: 0 0 0 3px rgba(3,76,140,0.08);
+    }
+
+    /* Pills format */
+    .gen-format-pills { display: flex; gap: 6px; }
+
+    .gen-pill {
+      flex: 1;
+      padding: 7px 0;
+      border: 1.5px solid var(--border);
+      border-radius: 7px;
+      background: var(--white);
+      font-size: 12px;
+      font-weight: 700;
+      font-family: 'DM Sans', sans-serif;
+      color: var(--mist);
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.15s;
+    }
+
+    .gen-pill:hover { border-color: var(--teal); color: var(--teal); }
+    .gen-pill.active { border-color: var(--navy); background: var(--navy); color: white; }
+
+    /* Toggle images */
+    .gen-toggle-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .gen-toggle-switch {
+      position: relative;
+      width: 36px;
+      height: 20px;
+      flex-shrink: 0;
+    }
+
+    .gen-toggle-switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+
+    .gen-toggle-track {
+      position: absolute;
+      inset: 0;
+      background: #d0cdc0;
+      border-radius: 10px;
+      transition: background 0.2s;
+    }
+
+    .gen-toggle-switch input:checked + .gen-toggle-track { background: var(--navy); }
+
+    .gen-toggle-thumb {
+      position: absolute;
+      top: 2px; left: 2px;
+      width: 16px; height: 16px;
+      background: white;
+      border-radius: 50%;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.25);
+      transition: transform 0.2s;
+    }
+
+    .gen-toggle-switch input:checked + .gen-toggle-track .gen-toggle-thumb {
+      transform: translateX(16px);
+    }
+
+    .gen-toggle-label { font-size: 13px; color: var(--ink); }
+
+    /* Quota compact */
+    .gen-quota-compact {
+      background: #f7f6ed;
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      padding: 10px 14px;
+      margin-bottom: 18px;
+    }
+
+    .gen-quota-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 6px;
+    }
+
+    .gen-quota-text { font-size: 12px; font-weight: 600; color: var(--ink); }
+    .gen-quota-plan { font-size: 10px; color: var(--mist); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+
+    .gen-quota-track {
+      height: 4px;
+      background: #dddbc9;
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .gen-quota-fill {
+      height: 100%;
+      background: var(--navy);
+      border-radius: 2px;
+      transition: width 0.3s;
+    }
+
+    .gen-quota-fill.warning { background: #c07a1a; }
+    .gen-quota-fill.danger  { background: #8b2020; }
+
+    .gen-quota-alert {
+      font-size: 11px;
+      color: #8b2020;
+      margin-top: 6px;
+      font-weight: 600;
+    }
+
+    /* Boutons d'action */
+    .gen-divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 18px 0;
+    }
+
+    .gen-btn {
+      width: 100%;
+      padding: 12px;
+      border-radius: 9px;
+      font-size: 13px;
+      font-weight: 700;
+      font-family: 'DM Sans', sans-serif;
+      cursor: pointer;
+      transition: all 0.15s;
+      margin-bottom: 8px;
+      border: none;
+    }
+
+    .gen-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .gen-btn-primary { background: var(--navy); color: white; }
+    .gen-btn-primary:hover:not(:disabled) { background: #023d72; }
+
+    .gen-btn-kindle  { background: var(--gold); color: white; }
+    .gen-btn-kindle:hover:not(:disabled) { background: #8e7447; }
+
+    .gen-btn-secondary {
+      background: transparent;
+      color: var(--teal);
+      border: 1.5px solid var(--border);
+    }
+
+    .gen-btn-secondary:hover:not(:disabled) { border-color: var(--teal); }
+
+    .gen-progress-msg {
+      text-align: center;
+      font-size: 12px;
+      color: var(--teal);
+      padding: 8px 0 0;
+    }
+
+    /* Panneau droit : prévisualisation */
+    .gen-preview-panel {
+      background: var(--white);
+      border-radius: 14px;
+      border: 1px solid rgba(3,76,140,0.07);
+      box-shadow: 0 1px 3px rgba(3,31,45,0.06), 0 4px 16px rgba(3,31,45,0.04);
+      overflow: hidden;
+    }
+
+    .gen-preview-header {
+      padding: 18px 24px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .gen-preview-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--ink);
+      line-height: 1.3;
+      margin-bottom: 8px;
+      word-break: break-word;
+    }
+
+    .gen-preview-meta {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 12px;
+      color: var(--mist);
+    }
+
+    .gen-preview-site {
+      font-weight: 700;
+      color: var(--teal);
+    }
+
+    .gen-preview-author::before { content: '— '; }
+
+    .gen-preview-body {
+      padding: 24px 28px;
+      font-family: Georgia, serif;
+      font-size: 15px;
+      line-height: 1.8;
+      color: #1a1a1a;
+      max-height: 70vh;
+      overflow-y: auto;
+    }
+
+    .gen-preview-body p { margin-bottom: 1em; }
+    .gen-preview-body h1, .gen-preview-body h2, .gen-preview-body h3 {
+      font-family: 'Playfair Display', serif;
+      color: var(--ink);
+      margin: 1.4em 0 0.5em;
+      line-height: 1.3;
+    }
+    .gen-preview-body h1 { font-size: 1.5em; }
+    .gen-preview-body h2 { font-size: 1.25em; }
+    .gen-preview-body h3 { font-size: 1.1em; }
+    .gen-preview-body img {
+      max-width: 100%;
+      height: auto;
+      display: block;
+      margin: 1.2em auto;
+      border-radius: 4px;
+    }
+    .gen-preview-body blockquote {
+      margin: 1.2em 0;
+      padding: 0 0 0 1.2em;
+      border-left: 3px solid var(--border);
+      color: var(--teal);
+      font-style: italic;
+    }
+    .gen-preview-body a { color: var(--navy); }
+    .gen-preview-body.no-images img,
+    .gen-preview-body.no-images figure { display: none; }
+
+    /* Scrollbar preview */
+    .gen-preview-body::-webkit-scrollbar { width: 6px; }
+    .gen-preview-body::-webkit-scrollbar-track { background: transparent; }
+    .gen-preview-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    /* Bandeau extraction partielle */
+    #gen-partial-warning {
+      background: rgba(166,138,86,0.12);
+      border: 1px solid rgba(166,138,86,0.35);
+      color: var(--ink);
+      border-radius: 10px;
+      padding: 12px 16px;
+      grid-column: 1 / -1;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    /* ── Bannière vérification email ── */
+    #email-verification-banner {
+      display: none;
+      align-items: center;
+      gap: 12px;
+      background: rgba(3,76,140,0.07);
+      border: 1px solid rgba(3,76,140,0.2);
+      border-radius: 10px;
+      padding: 12px 18px;
+      margin-bottom: 20px;
+      font-size: 13px;
+      color: var(--navy);
+    }
+    #email-verification-banner.visible { display: flex; }
+    .email-banner-text { flex: 1; }
+    #btn-resend-verification {
+      padding: 5px 12px;
+      background: transparent;
+      border: 1px solid var(--navy);
+      color: var(--navy);
+      border-radius: 7px;
+      font-size: 12px;
+      font-weight: 600;
+      font-family: 'DM Sans', sans-serif;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s;
+      flex-shrink: 0;
+    }
+    #btn-resend-verification:hover { background: var(--navy); color: white; }
+    #btn-resend-verification:disabled { opacity: 0.6; cursor: default; }
+
+    /* ── Modal email vérifié ── */
+    #email-verified-modal {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(3,31,45,0.5);
+      z-index: 200;
+      align-items: center; justify-content: center;
+      padding: 20px;
+      backdrop-filter: blur(3px);
+    }
+    #email-verified-modal.open { display: flex; }
+    #email-verified-modal .modal-box { border-top-color: #2e7d32; text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="layout">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <div class="logo-icon">📚</div>
+        <span class="logo-text">Palinso</span>
+      </div>
+
+      <nav class="nav-section">
+        <div class="nav-item active" data-tab="articles">
+          <span class="nav-icon">📋</span> Mes articles
+        </div>
+<div class="nav-item" data-tab="profile">
+          <span class="nav-icon">👤</span> Profil
+        </div>
+        <div class="nav-item" data-tab="subscription">
+          <span class="nav-icon">⭐</span> Abonnement
+        </div>
+        <div class="nav-item" data-tab="faq">
+          <span class="nav-icon">💬</span> FAQ
+        </div>
+      </nav>
+
+      <div class="sidebar-user">
+        <div class="user-name" id="dashboard-user"></div>
+        <button id="btn-logout-dashboard">↩ Déconnexion</button>
+      </div>
+    </aside>
+
+    <!-- Contenu -->
+    <main class="content">
+
+      <!-- Bannière vérification email -->
+      <div id="email-verification-banner">
+        <span>📧</span>
+        <span class="email-banner-text">Vérifiez votre email pour activer votre compte.</span>
+        <button id="btn-resend-verification">Renvoyer l'email</button>
+      </div>
+
+      <!-- Vue : Articles -->
+      <div id="view-articles" class="active">
+        <h1 class="page-title">Mes articles</h1>
+
+        <div class="toolbar">
+          <span class="filter-label">Filtrer :</span>
+          <div id="category-filters">
+            <button class="filter-btn active" data-category="all">Tous</button>
+          </div>
+          <button class="refresh-btn" id="refresh-btn">↻ Rafraîchir</button>
+          <button id="btn-delete-all">🗑 Tout supprimer</button>
+        </div>
+
+        <!-- Barre de consommation mensuelle -->
+        <div id="quota-bar" class="quota-bar" style="display:none">
+          <div class="quota-bar-header">
+            <span class="quota-bar-label" id="quota-bar-label">0 / 5 articles ce mois</span>
+            <span class="quota-bar-plan" id="quota-bar-plan">Offre Gratuite</span>
+          </div>
+          <div class="quota-progress-track">
+            <div class="quota-progress-fill" id="quota-progress-fill" style="width:0%"></div>
+          </div>
+          <div id="quota-upgrade-cta" class="quota-upgrade-cta" style="display:none">
+            <span id="quota-upgrade-text"></span>
+            <button class="quota-upgrade-btn" id="btn-quota-upgrade">Passer à l'offre supérieure →</button>
+          </div>
+        </div>
+
+        <div class="count-info" id="count-info"></div>
+
+        <div class="card">
+          <div id="loading">Chargement de vos articles...</div>
+          <div id="empty" style="display:none">
+            Aucun article pour le moment.<br>
+            <span style="color:var(--mist);font-size:12px">Utilisez l'extension sur une page web pour commencer.</span>
+          </div>
+          <table id="articles-table" style="display:none">
+            <thead>
+              <tr>
+                <th>Article</th>
+                <th>Catégorie</th>
+                <th>Format</th>
+                <th>Statut</th>
+                <th>Kindle</th>
+                <th>Date</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="articles-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Vue : Profil -->
+      <div id="view-profile">
+        <h1 class="page-title">Mon profil</h1>
+        <div class="profile-card">
+          <h2>Informations personnelles</h2>
+
+          <div class="profile-field">
+            <label>Nom</label>
+            <input type="text" id="profile-name" placeholder="Votre nom" />
+          </div>
+
+          <div class="profile-field">
+            <label>Email</label>
+            <div class="field-value" id="profile-email-display"></div>
+            <p class="field-hint">L'adresse email ne peut pas être modifiée.</p>
+          </div>
+
+          <div class="profile-field">
+            <label>Adresse email Kindle</label>
+            <input type="email" id="profile-kindle" placeholder="prenom_xxx@kindle.com" />
+            <p class="field-hint">Utilisée pour envoyer directement vos articles sur votre liseuse.</p>
+          </div>
+
+          <button class="profile-save-btn" id="btn-save-profile">Sauvegarder</button>
+          <div class="profile-feedback" id="profile-feedback"></div>
+        </div>
+
+        <!-- Changement de mot de passe -->
+        <div class="profile-card" style="margin-top: 24px;">
+          <h2>Changer le mot de passe</h2>
+
+          <div class="profile-field">
+            <label>Mot de passe actuel</label>
+            <div class="password-input-wrap">
+              <input type="password" id="pwd-current" placeholder="••••••••" autocomplete="current-password" />
+              <button class="pwd-toggle" data-target="pwd-current" type="button">👁</button>
+            </div>
+          </div>
+
+          <div class="profile-field">
+            <label>Nouveau mot de passe</label>
+            <div class="password-input-wrap">
+              <input type="password" id="pwd-new" placeholder="••••••••" autocomplete="new-password" />
+              <button class="pwd-toggle" data-target="pwd-new" type="button">👁</button>
+            </div>
+            <p class="field-hint">6 caractères minimum.</p>
+          </div>
+
+          <div class="profile-field">
+            <label>Confirmer le nouveau mot de passe</label>
+            <div class="password-input-wrap">
+              <input type="password" id="pwd-confirm" placeholder="••••••••" autocomplete="new-password" />
+              <button class="pwd-toggle" data-target="pwd-confirm" type="button">👁</button>
+            </div>
+          </div>
+
+          <button class="profile-save-btn" id="btn-change-password">Modifier le mot de passe</button>
+          <div class="profile-feedback" id="pwd-feedback"></div>
+        </div>
+
+        <!-- Zone de danger -->
+        <div style="margin-top: 32px; padding-top: 20px; border-top: 1px solid var(--border);">
+          <button id="btn-delete-account" style="background:none;border:none;font-family:'DM Sans',sans-serif;font-size:12px;color:#a04040;cursor:pointer;padding:0;text-decoration:underline;text-decoration-style:dotted;opacity:0.7;transition:opacity 0.15s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'">Supprimer mon compte</button>
+        </div>
+      </div>
+
+      <!-- Vue : Abonnement -->
+      <div id="view-subscription">
+        <h1 class="page-title">Abonnement</h1>
+
+        <!-- Bandeau plan actif payant -->
+        <div id="current-plan-banner" style="display:none" class="current-plan-banner">
+          <span id="current-plan-text"></span>
+          <button id="btn-cancel-plan">Résilier l'abonnement</button>
+        </div>
+
+        <!-- Bandeau essai -->
+        <div id="trial-banner" style="display:none">
+          <div class="trial-dashboard-banner trial" id="trial-banner-inner">
+            <span class="trial-banner-icon" id="trial-icon"></span>
+            <div class="trial-banner-body">
+              <span id="trial-text"></span>
+              <p id="trial-subtext"></p>
+            </div>
+            <button class="trial-banner-cta" id="trial-cta" style="display:none"></button>
+          </div>
+        </div>
+
+        <!-- Toggle mensuel / annuel -->
+        <div class="billing-toggle">
+          <span class="billing-label active" id="label-monthly">Mensuel</span>
+          <label class="toggle-switch">
+            <input type="checkbox" id="billing-switch">
+            <span class="toggle-track"><span class="toggle-thumb"></span></span>
+          </label>
+          <span class="billing-label" id="label-annual">Annuel</span>
+          <span class="saving-badge">−20%</span>
+        </div>
+        <p class="billing-hint">Prix en EUR, TVA incluse.</p>
+
+        <!-- Cartes tarifaires -->
+        <div class="plans-grid">
+
+          <!-- Plan Gratuit -->
+          <div class="plan-card" id="plan-gratuit">
+            <div class="plan-header">
+              <div class="plan-name">Gratuit</div>
+              <div class="plan-price-free">0 €</div>
+              <div class="plan-billing-note">pour toujours</div>
+            </div>
+
+            <button class="plan-btn plan-btn-ghost" data-plan="free" disabled style="opacity:0.45;">Offre gratuite</button>
+            <p class="plan-no-cc">&nbsp;</p>
+
+            <hr class="plan-divider">
+            <ul class="plan-features">
+              <li>✓ 3 conversions / mois</li>
+            </ul>
+            <div class="format-badges">
+              <span class="format-badge active">EPUB3</span>
+              <span class="format-badge">KEPUB</span>
+              <span class="format-badge">Kindle</span>
+            </div>
+            <ul class="plan-features">
+              <li>✓ Stockage 7 jours</li>
+              <li class="disabled">✗ KEPUB</li>
+              <li class="disabled">✗ Envoi Kindle</li>
+            </ul>
+          </div>
+
+          <!-- Plan Pro -->
+          <div class="plan-card plan-card-featured" id="plan-pro">
+            <div class="plan-popular-badge">Populaire</div>
+            <div class="plan-header">
+              <div class="plan-name">Pro</div>
+              <div class="plan-price-old" id="price-original">€4,99</div>
+              <div class="plan-price-wrap">
+                <span class="plan-currency">€</span>
+                <span class="plan-price" data-monthly="4.99" data-annual="3.99">4,99</span>
+                <span class="plan-per">/mois</span>
+              </div>
+              <div class="plan-billing-note" data-monthly="facturé mensuellement" data-annual="47,88 € facturé annuellement">facturé mensuellement</div>
+            </div>
+
+            <button class="plan-btn plan-btn-filled" data-plan="pro">S'abonner</button>
+            <p class="plan-no-cc">Sans carte bancaire requise</p>
+
+            <hr class="plan-divider">
+            <ul class="plan-features">
+              <li>✓ Conversions illimitées</li>
+            </ul>
+            <div class="format-badges">
+              <span class="format-badge active">EPUB3</span>
+              <span class="format-badge active">KEPUB</span>
+              <span class="format-badge active">Kindle</span>
+            </div>
+            <ul class="plan-features">
+              <li>✓ Tous formats simultanés</li>
+              <li>✓ Stockage 1 an</li>
+              <li>✓ Support prioritaire</li>
+            </ul>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Vue : FAQ -->
+      <div id="view-faq">
+        <h1 class="page-title">Questions fréquentes</h1>
+
+        <p class="faq-section-title">Conversion d'articles</p>
+
+        <div class="faq-item">
+          <button class="faq-question" aria-expanded="false">
+            Quels formats de fichiers sont disponibles ?
+            <span class="faq-chevron">▼</span>
+          </button>
+          <div class="faq-answer">
+            Trois formats sont pris en charge : <strong>EPUB3</strong> (universel, compatible avec la majorité des liseuses et applications de lecture), <strong>KEPUB</strong> (optimisé pour les liseuses Kobo), et <strong>FB2</strong> (format populaire sur les liseuses russes). <br><br>
+            EPUB3 est disponible sur l'offre Gratuite. KEPUB et FB2 nécessitent un abonnement <strong>Pro</strong>.
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-question" aria-expanded="false">
+            Certains articles s'extraient mal ou sont incomplets. Pourquoi ?
+            <span class="faq-chevron">▼</span>
+          </button>
+          <div class="faq-answer">
+            Certains sites utilisent un <strong>paywall</strong> ou chargent leur contenu via JavaScript après la page initiale. Dans ce cas, l'extension peut ne capturer qu'un aperçu limité de l'article.<br><br>
+            Un avertissement « Extraction potentiellement incomplète » s'affiche dans ce cas. Vérifiez toujours l'aperçu avant de lancer la génération.
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-question" aria-expanded="false">
+            Comment utiliser l'extension pour convertir un article ?
+            <span class="faq-chevron">▼</span>
+          </button>
+          <div class="faq-answer">
+            1. Naviguez sur la page de l'article à lire.<br>
+            2. Cliquez sur l'icône Palinso dans la barre d'extensions Chrome.<br>
+            3. Choisissez votre format et vos options, puis cliquez sur <strong>Convertir</strong>.<br>
+            4. Le dashboard s'ouvre automatiquement avec un aperçu. Vous pouvez ajuster le titre, la catégorie et le format avant de générer le fichier.
+          </div>
+        </div>
+
+        <p class="faq-section-title">Kindle</p>
+
+        <div class="faq-item">
+          <button class="faq-question" aria-expanded="false">
+            Comment envoyer un article directement sur mon Kindle ?
+            <span class="faq-chevron">▼</span>
+          </button>
+          <div class="faq-answer">
+            L'envoi Kindle est une fonctionnalité <strong>Pro</strong>. Pour l'activer :<br><br>
+            1. Renseignez votre adresse Kindle (ex. <code>prenom_xxx@kindle.com</code>) dans votre <strong>Profil</strong>.<br>
+            2. Autorisez l'adresse <code>kindle@palinso.app</code> dans votre compte Amazon : <em>amazon.fr → Compte → Appareils et contenu → Paramètres → Documents personnels</em>.<br><br>
+            Amazon convertit automatiquement les fichiers EPUB reçus pour votre liseuse.
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-question" aria-expanded="false">
+            Je n'ai pas reçu l'article sur ma Kindle. Que faire ?
+            <span class="faq-chevron">▼</span>
+          </button>
+          <div class="faq-answer">
+            Vérifiez que :<br>
+            • L'adresse <code>kindle@palinso.app</code> est bien dans la liste des expéditeurs approuvés sur Amazon.<br>
+            • L'adresse Kindle renseignée dans votre profil est correcte (elle se termine par <code>@kindle.com</code>).<br>
+            • Votre liseuse est connectée au Wi-Fi pour recevoir le document.<br><br>
+            La livraison Amazon peut parfois prendre quelques minutes.
+          </div>
+        </div>
+
+        <p class="faq-section-title">Plans et quota</p>
+
+        <div class="faq-item">
+          <button class="faq-question" aria-expanded="false">
+            Quelle est la différence entre le plan Gratuit et le plan Pro ?
+            <span class="faq-chevron">▼</span>
+          </button>
+          <div class="faq-answer">
+            <strong>Gratuit :</strong> 3 conversions par mois, format EPUB3 uniquement, articles conservés pendant 7 jours.<br><br>
+            <strong>Pro :</strong> conversions illimitées, tous les formats (EPUB3, KEPUB, FB2), envoi direct sur Kindle, articles conservés pendant 1 an.
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-question" aria-expanded="false">
+            Mon quota mensuel se réinitialise-t-il ?
+            <span class="faq-chevron">▼</span>
+          </button>
+          <div class="faq-answer">
+            Oui. Le quota de <strong>3 articles/mois</strong> du plan Gratuit se remet à zéro au début de chaque mois calendaire. Les articles déjà générés restent accessibles pendant 7 jours.
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-question" aria-expanded="false">
+            Mes articles sont-ils supprimés automatiquement ?
+            <span class="faq-chevron">▼</span>
+          </button>
+          <div class="faq-answer">
+            Oui, une purge automatique s'effectue régulièrement :<br>
+            • <strong>Plan Gratuit :</strong> les articles sont supprimés après <strong>7 jours</strong>.<br>
+            • <strong>Plan Pro :</strong> les articles sont conservés pendant <strong>1 an</strong>.<br><br>
+            Pensez à télécharger vos fichiers avant expiration si vous êtes sur l'offre Gratuite.
+          </div>
+        </div>
+
+        <p class="faq-section-title">Compte et sécurité</p>
+
+        <div class="faq-item">
+          <button class="faq-question" aria-expanded="false">
+            Je n'arrive pas à me connecter. Que faire ?
+            <span class="faq-chevron">▼</span>
+          </button>
+          <div class="faq-answer">
+            Si vous avez créé un compte avec email/mot de passe, vérifiez que votre adresse email est bien vérifiée (un email de confirmation vous a été envoyé à l'inscription).<br><br>
+            En cas de mot de passe oublié, utilisez le lien <strong>Mot de passe oublié</strong> sur la page de connexion pour recevoir un lien de réinitialisation (valable 30 minutes).
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-question" aria-expanded="false">
+            Puis-je utiliser mon compte Google pour me connecter ?
+            <span class="faq-chevron">▼</span>
+          </button>
+          <div class="faq-answer">
+            Oui. Palinso prend en charge la connexion via <strong>Google</strong>. Cliquez sur <em>Continuer avec Google</em> sur la page de connexion — votre compte est créé automatiquement lors de la première connexion.
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Vue : Génération -->
+      <div id="view-generation">
+
+        <!-- Topbar -->
+        <div class="gen-topbar">
+          <button class="gen-back-btn" id="gen-back-btn">← Retour</button>
+          <h1 class="page-title">Aperçu avant génération</h1>
+        </div>
+
+<!-- État : chargement -->
+        <div id="gen-loading" class="gen-state">
+          <div class="gen-state-icon">⏳</div>
+          <div id="gen-loading-text">Chargement en cours…</div>
+        </div>
+
+        <!-- État : erreur -->
+        <div id="gen-error" class="gen-state" style="display:none">
+          <div class="gen-error-box">
+            <strong>Impossible d'extraire le contenu</strong>
+            <span id="gen-error-text"></span>
+            <br>
+            <button class="gen-retry-btn" id="gen-retry-btn">← Retour aux articles</button>
+          </div>
+        </div>
+
+        <!-- Contenu principal -->
+        <div id="gen-content" class="gen-layout" style="display:none">
+
+          <div id="gen-partial-warning" style="display:none">⚠️ <strong>Extraction potentiellement incomplète</strong> — Le contenu récupéré semble partiel. Ce site utilise peut-être un paywall. Vérifiez l'aperçu avant de générer.</div>
+
+          <!-- Panneau gauche : paramètres -->
+          <div class="gen-controls-panel">
+
+            <p class="gen-section-title">Paramètres</p>
+
+            <div class="gen-field">
+              <label>Titre</label>
+              <input type="text" id="gen-title" placeholder="Titre de l'article" />
+            </div>
+
+            <div class="gen-field">
+              <label>Catégorie</label>
+              <input type="text" id="gen-category" placeholder="Tech, Newsletter…" list="gen-category-list" autocomplete="off" />
+              <datalist id="gen-category-list"></datalist>
+            </div>
+
+            <div class="gen-field">
+              <label>Format de sortie</label>
+              <div class="gen-format-pills">
+                <button class="gen-pill active" data-format="epub3">EPUB3</button>
+                <button class="gen-pill" data-format="kepub">KEPUB</button>
+                <button class="gen-pill" data-format="fb2">FB2</button>
+              </div>
+            </div>
+
+            <div class="gen-field">
+              <label>Contenu</label>
+              <div class="gen-toggle-row">
+                <label class="gen-toggle-switch">
+                  <input type="checkbox" id="gen-images" checked>
+                  <span class="gen-toggle-track"><span class="gen-toggle-thumb"></span></span>
+                </label>
+                <span class="gen-toggle-label">Inclure les images</span>
+              </div>
+            </div>
+
+            <hr class="gen-divider">
+
+            <!-- Quota -->
+            <div class="gen-quota-compact" id="gen-quota" style="display:none">
+              <div class="gen-quota-row">
+                <span class="gen-quota-text" id="gen-quota-text"></span>
+                <span class="gen-quota-plan" id="gen-quota-plan"></span>
+              </div>
+              <div class="gen-quota-track">
+                <div class="gen-quota-fill" id="gen-quota-fill" style="width:0%"></div>
+              </div>
+              <div class="gen-quota-alert" id="gen-quota-alert" style="display:none"></div>
+            </div>
+
+            <!-- Actions -->
+            <button class="gen-btn gen-btn-primary" id="gen-submit-epub">Générer en EPUB3</button>
+            <button class="gen-btn gen-btn-kindle"  id="gen-submit-kindle" style="display:none">📬 Envoyer au Kindle</button>
+            <div class="gen-progress-msg" id="gen-progress" style="display:none">⏳ Génération en cours…</div>
+
+          </div>
+
+          <!-- Panneau droit : prévisualisation -->
+          <div class="gen-preview-panel">
+            <div class="gen-preview-header">
+              <div class="gen-preview-title" id="gen-preview-title"></div>
+              <div class="gen-preview-meta">
+                <span class="gen-preview-site" id="gen-preview-site"></span>
+                <span class="gen-preview-author" id="gen-preview-author"></span>
+              </div>
+            </div>
+            <div class="gen-preview-body" id="gen-preview-body"></div>
+          </div>
+
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- Modal offre Pro requise -->
+  <div id="pro-modal">
+    <div class="modal-box">
+      <h3>Fonctionnalité Pro</h3>
+      <p id="pro-modal-text"></p>
+      <div class="modal-actions">
+        <button class="modal-btn modal-btn-cancel" id="pro-modal-cancel">Fermer</button>
+        <button class="modal-btn modal-btn-primary" id="pro-modal-subscribe">Souscrire →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Kindle manquant -->
+  <div id="kindle-missing-modal">
+    <div class="modal-box">
+      <h3>Adresse Kindle manquante</h3>
+      <p>Renseignez votre adresse Kindle dans votre profil pour pouvoir envoyer directement sur votre liseuse.</p>
+      <div class="modal-actions">
+        <button class="modal-btn modal-btn-cancel" id="kindle-modal-cancel">Fermer</button>
+        <button class="modal-btn modal-btn-primary" id="kindle-modal-go-profile">Aller au profil →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal configuration Kindle -->
+  <div id="kindle-setup-modal">
+    <div class="modal-box">
+      <h3>Activation de l'envoi Kindle</h3>
+      <p>Pour recevoir vos articles, vous devez autoriser l'adresse <strong style="color:var(--ink)">kindle@palinso.app</strong> dans votre compte Amazon.</p>
+      <p style="font-size:12px;margin-top:-10px;line-height:1.6;">Rendez-vous sur <strong>amazon.fr → Compte → Appareils et contenu → Paramètres → Documents personnels</strong>, puis ajoutez cette adresse dans la liste des expéditeurs approuvés.</p>
+      <div class="modal-actions" style="justify-content:center;">
+        <button class="modal-btn modal-btn-primary" id="btn-close-kindle-setup-modal" style="flex:none;padding:11px 32px;">J'ai compris</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal email vérifié -->
+  <div id="email-verified-modal">
+    <div class="modal-box">
+      <h3>🎉 Email vérifié ! Bienvenue sur Palinso.</h3>
+      <p>Votre adresse email a bien été confirmée.</p>
+      <div class="modal-actions" style="justify-content:center;">
+        <button class="modal-btn modal-btn-primary" id="btn-close-verified-modal" style="flex:none;padding:11px 32px;">Commencer</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../lib/browser-polyfill.min.js"></script>
+  <script src="dashboard.js"></script>
+</body>
+</html>
