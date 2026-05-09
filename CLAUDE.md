@@ -2,6 +2,36 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Maintenance de ce fichier
+
+**CLAUDE.md est une source de vérité vivante. Tu as l'obligation de le mettre à jour.**
+
+### Quand mettre à jour
+
+Mets à jour CLAUDE.md **dans la même session** (pas après, pas "plus tard") dès que tu :
+
+- Ajoutes une route, un endpoint, ou un middleware
+- Modifies le comportement d'un composant existant (extension, backend, DB)
+- Ajoutes une variable d'environnement
+- Changes un flux (auth, traitement d'article, Stripe, email)
+- Ajoutes une dépendance externe significative
+- Modifies la structure des dossiers ou des fichiers clés
+- Changes un comportement de quota, de rétention, ou de plan
+
+### Ce que tu dois mettre à jour
+
+- Les sections concernées (pas une section générique "Changelog")
+- Les exemples de commandes si nécessaire
+- Les tableaux (variables d'env, etc.)
+- Les flux décrits en prose si le comportement change
+
+### Règles
+
+1. **Ne jamais laisser CLAUDE.md décrire un comportement qui n't'existe plus.**
+2. Si tu ajoutes quelque chose de non trivial et qu'il n'y a pas de section appropriée, crée-en une.
+3. La mise à jour de CLAUDE.md fait partie du travail — ce n'est pas une tâche optionnelle ou de fin de session.
+4. Si tu n'es pas sûr de ce qu'il faut documenter, demande.
+
 ## Project Overview
 
 **Palinso** is a Chrome extension (Manifest V3) paired with a Node.js/Express backend that converts web articles into EPUB/KEPUB files and sends them to Kindle. The project has two components:

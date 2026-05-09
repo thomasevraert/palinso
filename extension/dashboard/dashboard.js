@@ -861,6 +861,9 @@ async function startExtraction() {
   document.getElementById('gen-loading').style.display   = 'block';
   document.getElementById('gen-error').style.display     = 'none';
   document.getElementById('gen-content').style.display   = 'none';
+  document.getElementById('gen-progress').style.display  = 'none';
+  document.getElementById('gen-submit-epub').disabled    = false;
+  document.getElementById('gen-submit-kindle').disabled  = false;
   document.getElementById('gen-back-btn').textContent    = '← Retour';
   document.getElementById('gen-loading-text').textContent = 'Extraction du contenu en cours…';
 

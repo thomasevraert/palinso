@@ -59,6 +59,19 @@ async function runGlobalCleanup() {
     }
 
     if (total > 0) console.log(`🧹 Cleanup global : ${total} article(s) supprimé(s) au total`);
+
+    const processingTimeout = new Date(Date.now() - 15 * 60 * 1000).toISOString();
+    const { count: stuckCount } = await db.get(
+      `SELECT COUNT(*) AS count FROM articles WHERE status = 'processing' AND created_at < $1`,
+      [processingTimeout]
+    ) ?? { count: 0 };
+    if (stuckCount > 0) {
+      await db.run(
+        `UPDATE articles SET status = 'error', error_message = 'Traitement interrompu (timeout serveur)' WHERE status = 'processing' AND created_at < $1`,
+        [processingTimeout]
+      );
+      console.log(`⏱ Cleanup processing : ${stuckCount} article(s) bloqué(s) repassé(s) en erreur`);
+    }
   } catch (err) {
     console.error('Erreur cleanup global :', err.message);
   }

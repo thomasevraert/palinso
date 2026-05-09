@@ -304,7 +304,15 @@ router.get('/:id/download', authMiddleware, async (req, res) => {
       return res.status(400).json({ error: "L'article n'est pas encore prêt (statut : " + article.status + ")" });
     }
     if (!article.epub_path || !fs.existsSync(article.epub_path)) {
-      return res.status(404).json({ error: 'Fichier EPUB introuvable sur le serveur' });
+      if (!article.content_html) {
+        return res.status(404).json({ error: 'Fichier EPUB introuvable et contenu source absent' });
+      }
+      const newPath = await generateEpub(
+        { title: article.title, author: article.author, content: article.content_html },
+        article.id
+      );
+      await db.run('UPDATE articles SET epub_path = $1 WHERE id = $2', [newPath, article.id]);
+      article.epub_path = newPath;
     }
 
     const formatDemande = req.query.format || article.format || 'epub3';
