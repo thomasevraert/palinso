@@ -115,6 +115,25 @@ Free plan: 3 articles/month tracked via `article_quota_log` table (rolling calen
 
 Transactional emails (verification, password reset) use **Resend** (`resend` npm package) from `hello@palinso.app`. Kindle delivery uses **nodemailer** (SMTP) with subject prefix `"Convert:"` which triggers Amazon's automatic EPUB→MOBI conversion.
 
+### Newsletter Inbound Flow (Mailgun)
+
+Pro users can forward newsletters to their personal Palinso address (`<email_token>@mg.palinso.app`). Mailgun routes these inbound emails to the backend.
+
+Route: `POST /api/webhooks/email-inbound` — registered in `index.js` **before** `express.json()`, uses `express.urlencoded` + `multer` to parse multipart form data sent by Mailgun.
+
+Flow:
+1. Mailgun posts the email as multipart/form-data to the endpoint
+2. Backend verifies the HMAC-SHA256 signature (`timestamp + token` signed with `MAILGUN_WEBHOOK_SIGNING_KEY`) — always returns `200` to avoid Mailgun retries, but sets `received: false` on failure
+3. Extracts the `email_token` from the recipient address (part before `@`)
+4. Looks up the user by `email_token` — aborts if not found, not pro, or no Kindle email set
+5. Parses `body-html` (or `body-plain` fallback) with `@mozilla/readability` + JSDOM
+6. Generates an EPUB via `generateEpub()` and sends it to Kindle via `sendToKindle()`
+7. Records the article in the `articles` table with `url = 'newsletter:<from>'`
+
+Processing is fire-and-forget via `setImmediate` — the `200` response is sent immediately.
+
+**`email_token`** — 16-char hex string, unique per user, stored in `users.email_token`. Generated automatically at DB init for all existing users (backfill runs on startup in both SQLite and PostgreSQL modes).
+
 ## Environment Variables (backend)
 
 | Variable | Purpose |
@@ -128,6 +147,7 @@ Transactional emails (verification, password reset) use **Resend** (`resend` npm
 | `BACKEND_URL` | Public URL used in email links (e.g. `https://palinso-production.up.railway.app`) |
 | `SMTP_HOST/PORT/USER/PASS/FROM` | Kindle delivery SMTP credentials |
 | `SENTRY_DSN` | Sentry error monitoring DSN — optional, silent in dev if absent |
+| `MAILGUN_WEBHOOK_SIGNING_KEY` | Mailgun webhook signing key — used to verify inbound email HMAC signatures |
 
 ## Extension Development
 
