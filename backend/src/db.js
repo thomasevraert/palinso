@@ -33,7 +33,8 @@ if (process.env.DATABASE_URL) {
     subscribed_at TIMESTAMPTZ DEFAULT NULL,
     trial_end          TIMESTAMPTZ DEFAULT NULL,
     created_at         TIMESTAMPTZ DEFAULT NOW(),
-    articles_generated INTEGER DEFAULT 0
+    articles_generated INTEGER DEFAULT 0,
+    email_token        TEXT UNIQUE DEFAULT NULL
   );
 
   CREATE TABLE IF NOT EXISTS articles (
@@ -93,8 +94,20 @@ if (process.env.DATABASE_URL) {
     `ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified BOOLEAN DEFAULT FALSE`,
     `ALTER TABLE users ADD COLUMN IF NOT EXISTS google_id TEXT DEFAULT NULL`,
     `ALTER TABLE users ADD COLUMN IF NOT EXISTS first_name TEXT DEFAULT NULL`,
+    `ALTER TABLE users ADD COLUMN IF NOT EXISTS email_token TEXT UNIQUE DEFAULT NULL`,
   ];
   return Promise.all(migrations.map(sql => pool.query(sql)));
+}).then(async () => {
+  try {
+    const crypto = require('crypto');
+    const usersWithoutToken = await db.all(`SELECT id FROM users WHERE email_token IS NULL`);
+    for (const user of usersWithoutToken) {
+      const token = crypto.randomBytes(8).toString('hex');
+      await db.run(`UPDATE users SET email_token = $1 WHERE id = $2`, [token, user.id]);
+    }
+  } catch (err) {
+    console.error('Erreur backfill email_token (PostgreSQL):', err);
+  }
 }).catch(err => console.error('Erreur init DB PostgreSQL:', err));
 
   db = {
@@ -131,7 +144,8 @@ if (process.env.DATABASE_URL) {
       subscribed_at TEXT DEFAULT NULL,
       trial_end          TEXT DEFAULT NULL,
       created_at         TEXT DEFAULT (datetime('now')),
-      articles_generated INTEGER DEFAULT 0
+      articles_generated INTEGER DEFAULT 0,
+      email_token        TEXT UNIQUE DEFAULT NULL
     );
 
     CREATE TABLE IF NOT EXISTS articles (
@@ -197,9 +211,21 @@ if (process.env.DATABASE_URL) {
     `ALTER TABLE users ADD COLUMN email_verified INTEGER DEFAULT 0`,
     `ALTER TABLE users ADD COLUMN google_id TEXT DEFAULT NULL`,
     `ALTER TABLE users ADD COLUMN first_name TEXT DEFAULT NULL`,
+    `ALTER TABLE users ADD COLUMN email_token TEXT DEFAULT NULL`,
   ];
   for (const sql of migrations) {
     try { sqlite.exec(sql); } catch { /* colonne déjà existante */ }
+  }
+
+  try {
+    const crypto = require('crypto');
+    const users = sqlite.prepare('SELECT id FROM users WHERE email_token IS NULL').all();
+    const stmt = sqlite.prepare('UPDATE users SET email_token = ? WHERE id = ?');
+    for (const user of users) {
+      stmt.run(crypto.randomBytes(8).toString('hex'), user.id);
+    }
+  } catch (err) {
+    console.error('Erreur backfill email_token (SQLite):', err);
   }
 
   const toSQLite = (sql) => sql.replace(/\$\d+/g, '?');

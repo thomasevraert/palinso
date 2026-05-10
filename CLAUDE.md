@@ -137,6 +137,8 @@ To switch between local and production API, edit `API_BASE` at the top of `backg
 
 ## Extension Firefox Build
 
+> **Règle absolue** : toute modification dans `extension/` doit être suivie d'un `bash extension/build-firefox.sh` pour regénérer `dist-firefox/` et `firefox-extension.zip`. Chrome et Firefox doivent toujours être au même niveau de fonctionnalité. Ne jamais livrer un changement sur l'un sans mettre à jour l'autre.
+
 ```bash
 bash extension/build-firefox.sh
 # Produit : dist-firefox/  (chargeable dans about:debugging)
