@@ -19,18 +19,21 @@ function verifyMailgunSignature(signingKey, timestamp, token, signature) {
 }
 
 router.post('/', express.urlencoded({ extended: true }), upload.any(), async (req, res) => {
+  console.log('[email-inbound] reçu', { recipient: req.body?.recipient, hasTimestamp: !!req.body?.timestamp });
   const { timestamp, token, signature } = req.body;
   const signingKey = process.env.MAILGUN_WEBHOOK_SIGNING_KEY;
 
   if (!signingKey || !verifyMailgunSignature(signingKey, timestamp, token, signature)) {
+    console.warn('[email-inbound] signature invalide ou clé manquante', { signingKey: !!signingKey, timestamp: !!timestamp, token: !!token, signature: !!signature });
     return res.status(200).json({ received: false });
   }
 
   res.json({ received: true });
 
   setImmediate(async () => {
+    const emailToken = (req.body.recipient || '').split('@')[0];
+    console.log('[email-inbound] traitement démarré pour token', emailToken);
     try {
-      const emailToken = (req.body.recipient || '').split('@')[0];
       if (!emailToken) return;
 
       const user = await get(
