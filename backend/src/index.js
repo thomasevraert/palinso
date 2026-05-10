@@ -20,7 +20,7 @@ const { webhookHandler } = require('./routes/stripe');
 const emailInboundHandler = require('./routes/email-inbound');
 
 app.post('/api/stripe/webhook', express.raw({ type: '*/*' }), webhookHandler);
-app.post('/api/webhooks/email-inbound', emailInboundHandler);
+app.use('/api/webhooks/email-inbound', emailInboundHandler);
 app.use(cors({ origin: '*' }));
 app.use(express.json({ limit: '5mb' }));
 app.use(express.static(path.join(__dirname, '../public')));
