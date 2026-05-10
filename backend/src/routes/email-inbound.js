@@ -18,7 +18,7 @@ function verifyMailgunSignature(signingKey, timestamp, token, signature) {
   return hash === signature;
 }
 
-router.post('/', upload.any(), async (req, res) => {
+router.post('/', express.urlencoded({ extended: true }), upload.any(), async (req, res) => {
   const { timestamp, token, signature } = req.body;
   const signingKey = process.env.MAILGUN_WEBHOOK_SIGNING_KEY;
 
